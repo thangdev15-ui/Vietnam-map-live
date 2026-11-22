@@ -1,0 +1,12 @@
+import { it,expect } from 'vitest';
+import { mkdtempSync,rmSync,readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Store } from '../apps/backend/src/database';
+import { GameEngine } from '../packages/game-engine/index';
+import { Processor } from '../apps/backend/src/processor';
+import { defaults,type Province,type State } from '../packages/shared/index';
+const map=JSON.parse(readFileSync('assets/maps/historical63.json','utf8')) as Province[];
+it('restores committed state and dedup keys across SQLite reopen',()=>{const dir=mkdtempSync(join(tmpdir(),'vn-game-'));try{const path=join(dir,'test.sqlite');let store=new Store(path);const engine=new GameEngine(map);engine.start();const processor=new Processor(engine,store);const event={id:'persist',source:'demo',type:'comment',userId:'u',username:'u',text:'đỏ',count:1};processor.enqueue(event);processor.drain();store.db.close();store=new Store(path);expect(store.get<State>('state')?.players[0].team).toBe('red');expect(new Processor(engine,store).enqueue(event)).toBe('duplicate');store.db.close();}finally{rmSync(dir,{recursive:true,force:true});}});
+it('enforces per-user spam quota independently of event ids',()=>{const store=new Store(':memory:');try{const engine=new GameEngine(map,{...structuredClone(defaults),cooldown:0,spamLimit:2});engine.start();const processor=new Processor(engine,store);for(let i=0;i<3;i++)processor.enqueue({id:String(i),source:'demo',type:'comment',userId:'u',username:'u',text:'đỏ',count:1});processor.drain();expect(store.logs()).toEqual(expect.arrayContaining([expect.objectContaining({result:'spam'})]));}finally{store.db.close();}});
+it('ships 34 merged geometries with unique ids, finite coordinates and 63 historical ids',()=>{const merged=JSON.parse(readFileSync('assets/maps/merged34.json','utf8')) as Province[];expect(merged.length).toBe(34);for(const data of [map,merged]){expect(new Set(data.map(p=>p.id)).size).toBe(data.length);expect(data.every(p=>p.center.every(Number.isFinite)&&p.polygons.every(poly=>poly.every(ring=>ring.length>=4&&ring.every(point=>point.every(Number.isFinite)))))).toBe(true);}});
