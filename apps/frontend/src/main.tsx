@@ -19,7 +19,6 @@ function PortraitBroadcast({
   setSelected: (id: string) => void;
   connected: boolean;
 }) {
-  const [spotlightId, setSpotlightId] = useState<string>();
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
   const leader = state.players[0];
@@ -27,15 +26,6 @@ function PortraitBroadcast({
   const latestProvinceName = latestEffect
     ? provinces.find((p) => p.id === latestEffect.province)?.name
     : undefined;
-  useEffect(() => {
-    if (!latestEffect) return;
-    setSpotlightId(latestEffect.id);
-    const timeout = window.setTimeout(
-      () => setSpotlightId(undefined),
-      latestEffect.kind === "capture" ? 3900 : 2400,
-    );
-    return () => window.clearTimeout(timeout);
-  }, [latestEffect?.id]);
   const selectedProvince = provinces.find((p) => p.id === selected) ?? provinces[0];
   const selectedTerritory = state.territories.find(
     (t) => t.id === selectedProvince.id,
@@ -118,17 +108,6 @@ function PortraitBroadcast({
             {!claimedProvinces.length && <p className="portrait-empty">Chưa có tỉnh nào được chiếm.</p>}
           </section>
         </aside>
-        {spotlightId && latestEffect && (
-          <div className="portrait-event-spotlight" key={spotlightId}>
-            <div className="portrait-avatar">
-              <span>{latestEffect.player.slice(0, 1).toUpperCase()}</span>
-              {latestEffect.avatar && <img src={latestEffect.avatar} alt="" />}
-            </div>
-            <small>{latestEffect.kind === "capture" ? "⚔ TỈNH VỪA BỊ CHIẾM" : latestEffect.kind === "heal" ? "TIẾP VIỆN PHÒNG THỦ" : "ĐÒN TẤN CÔNG MỚI"}</small>
-            <b>{latestEffect.kind === "capture" ? latestProvinceName : latestEffect.player}</b>
-            <em>{latestEffect.kind === "capture" ? `♛ ${latestEffect.player} chinh phục thành công` : `${latestProvinceName} · +${latestEffect.power}`}</em>
-          </div>
-        )}
       </section>
 
       <section className="portrait-cta">
