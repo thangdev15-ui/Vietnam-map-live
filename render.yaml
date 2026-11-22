@@ -3,21 +3,17 @@ services:
     name: vietnam-map-live
     runtime: node
     region: singapore
-    plan: 0.5c-512mb
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
-    disk:
-      name: game-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 24.22.1
       - key: HOST
         value: 0.0.0.0
       - key: DATABASE_PATH
-        value: /var/data/game.sqlite
+        value: /tmp/game.sqlite
       - key: ADMIN_TOKEN
         generateValue: true
       - key: TIKTOK_SIGN_API_KEY
