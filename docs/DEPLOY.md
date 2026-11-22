@@ -1,3 +1,16 @@
+# Triển khai Render (khuyến nghị)
+
+Repository đã có `render.yaml` để đưa **cả game, admin, Socket.IO và backend** lên một URL. Dùng một Web Service duy nhất vì state trận và SQLite phải ở cùng tiến trình.
+
+1. Vào [Render Dashboard](https://dashboard.render.com/), đăng nhập bằng GitHub, chọn **New → Blueprint** rồi chọn repo `thangdev15-ui/Vietnam-map-live`, branch `main`.
+2. Render đọc `render.yaml`. Giữ region Singapore. Nhập `TIKTOK_SIGN_API_KEY` khi được hỏi nếu muốn nhận TikTok LIVE thật; để trống nếu chỉ chạy mô phỏng.
+3. Bấm **Apply**. Khi trạng thái `Live`, mở URL `https://vietnam-map-live.onrender.com` mà Render cấp. Admin ở `/admin`, broadcast ở `/?broadcast=1`.
+4. Lưu `ADMIN_TOKEN` trong phần Environment của service. Render tự sinh token này; dùng token đó để đăng nhập `/admin`.
+
+`DATABASE_PATH` được đặt ở `/var/data/game.sqlite`, một persistent disk 1 GB. Disk giữ dữ liệu qua restart/deploy; Render yêu cầu gói trả phí cho persistent disk. Không chuyển service này thành nhiều instance vì SQLite chỉ có một file dữ liệu.
+
+Sau mỗi lần `git push origin main`, Render sẽ tự build và deploy lại. Kiểm tra `https://<ten-service>.onrender.com/api/health` phải trả về `{ "ok": true }`.
+
 # Triển khai VPS
 
 Một Node process sở hữu game state; không chạy nhiều replica với SQLite này. Cần Node 24+, dung lượng ghi được, reverse proxy HTTPS.

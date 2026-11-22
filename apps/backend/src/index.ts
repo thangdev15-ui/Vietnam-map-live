@@ -9,8 +9,8 @@ const server = createApp(
 );
 server.http.listen(
   Number(process.env.PORT ?? 3001),
-  process.env.HOST ?? "127.0.0.1",
-  () => console.log(`Server ready http://${process.env.HOST ?? "127.0.0.1"}:${process.env.PORT ?? 3001}`),
+  process.env.HOST ?? "0.0.0.0",
+  () => console.log(`Server ready http://${process.env.HOST ?? "0.0.0.0"}:${process.env.PORT ?? 3001}`),
 );
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, () => {
