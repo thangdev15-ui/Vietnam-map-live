@@ -91,7 +91,7 @@ export function createApp(token: string, dbPath: string) {
               : response.status === 429
                 ? "ElevenLabs đã hết quota hoặc giới hạn lượt đọc"
                 : "Không tạo được giọng đọc từ ElevenLabs";
-        r.status(502).json({ error });
+        r.status(502).json({ error, providerStatus: response.status });
         return;
       }
       r.set("Cache-Control", "no-store");
