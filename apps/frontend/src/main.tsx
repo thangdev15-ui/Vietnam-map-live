@@ -40,8 +40,8 @@ function PortraitBroadcast({
       team: state.settings.teams.find((team) => team.id === territory.owner),
     }));
   const featured = latestEffect
-    ? `${latestEffect.player} vừa ${latestEffect.kind === "capture" ? "chiếm đóng" : latestEffect.kind === "heal" ? "tiếp viện" : "tấn công"} ${latestProvinceName ?? "một vùng"}`
-    : state.feed[0] ?? "Bình luận để chọn phe và thắp sáng bản đồ";
+    ? `${latestEffect.player} vừa ${latestEffect.kind === "capture" ? "thắp sáng" : latestEffect.kind === "heal" ? "tiếp năng lượng cho" : "gửi ánh sáng tới"} ${latestProvinceName ?? "một vùng"}`
+    : state.feed[0] ?? "Bình luận tên tỉnh, thành để thắp sáng bản đồ";
   return (
     <main className="portrait-live" aria-label="Màn hình phát TikTok dọc">
       <header className="portrait-header">
@@ -68,15 +68,15 @@ function PortraitBroadcast({
         <div className="portrait-province-chip">
           <span style={{ background: selectedTeam?.color ?? "#7f9aa7" }} />
           <b>{selectedProvince.name}</b>
-          <small>{selectedTeam?.name ?? "VÙNG TRUNG LẬP"} · {Math.round(selectedTerritory?.hp ?? 0)} HP</small>
+          <small>{selectedTeam ? "ĐÃ LÊN ĐÈN" : "CHƯA LÊN ĐÈN"} · {Math.round(selectedTerritory?.hp ?? 0)} NL</small>
         </div>
         <aside className="portrait-side-panel">
           <section className="portrait-card conqueror-card">
-            <small>⚡ DIỄN BIẾN MỚI</small>
+            <small>⚡ ÁNH SÁNG MỚI</small>
             <p>{featured}</p>
           </section>
           <section className="portrait-card leaderboard-card">
-            <small>🏆 ĐUA HẠNG · {state.phase === "running" ? "ĐANG DIỄN RA" : "CHỜ KHAI TRẬN"}</small>
+            <small>🏆 BẢNG ĐIỂM THẮP ĐÈN · {state.phase === "running" ? "ĐANG DIỄN RA" : "CHỜ KHAI TRẬN"}</small>
             {state.players.slice(0, 4).map((player, index) => (
               <div className="portrait-rank" key={player.name + index}>
                 <b>{index + 1}</b><span>{player.name}</span><strong>{player.score}</strong>
@@ -86,7 +86,7 @@ function PortraitBroadcast({
           </section>
           {leader && (
             <section className="portrait-card leader-card">
-              <small>♛ CHIẾN BINH DẪN ĐẦU</small>
+              <small>♛ NGƯỜI THẮP SÁNG DẪN ĐẦU</small>
               <div className="side-leader">
                 <div className="side-avatar">
                   <span>{leader.name.slice(0, 1).toUpperCase()}</span>
@@ -97,25 +97,25 @@ function PortraitBroadcast({
             </section>
           )}
           <section className="portrait-card claimed-card">
-            <small>✦ TỈNH ĐÃ CHIẾM · {claimedProvinces.length}/{provinces.length}</small>
+            <small>✦ TỈNH, THÀNH ĐÃ LÊN ĐÈN · {claimedProvinces.length}/{provinces.length}</small>
             {claimedProvinces.slice(0, 6).map((province) => (
               <div className="portrait-claim" key={province.name}>
-                <i style={{ background: province.team?.color ?? "#ffffff" }} />
-                <span>{province.name}</span><b>{province.team?.name}</b>
+                <i style={{ background: "#ffd34e" }} />
+                <span>{province.name}</span><b>ĐÃ SÁNG</b>
               </div>
             ))}
             {claimedProvinces.length > 6 && <p className="portrait-empty">+ {claimedProvinces.length - 6} tỉnh khác</p>}
-            {!claimedProvinces.length && <p className="portrait-empty">Chưa có tỉnh nào được chiếm.</p>}
+            {!claimedProvinces.length && <p className="portrait-empty">Hãy là người thắp ngọn đèn đầu tiên.</p>}
           </section>
         </aside>
       </section>
 
       <section className="portrait-cta">
-        <span>CHỌN PHE: <b>ĐỎ · XANH · VÀNG</b></span>
-        <strong>COMMENT “{state.settings.attackWord.toUpperCase()} + TÊN TỈNH” ĐỂ CHIẾM ĐÓNG</strong>
+        <span>GÕ TÊN TỈNH, THÀNH BẠN MUỐN THẮP</span>
+        <strong>COMMENT “HÀ NỘI” ĐỂ BẬT ĐÈN THÀNH PHỐ</strong>
       </section>
       <section className="portrait-gifts">
-        <span>🎁 TẶNG QUÀ ĐỂ TIẾP VIỆN</span>
+        <span>🎁 TẶNG QUÀ ĐỂ GỬI THÊM ÁNH SÁNG</span>
         {state.settings.gifts.slice(0, 4).map((gift) => <b key={gift.id}>✦ {gift.name}</b>)}
         <i className={connected ? "online" : ""}>{connected ? "ĐỒNG BỘ LIVE" : "ĐANG KẾT NỐI"}</i>
       </section>

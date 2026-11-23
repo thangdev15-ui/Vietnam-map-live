@@ -62,31 +62,22 @@ export function BattleMap({
         });
       }
       refreshMarkers(s: State) {
-        const picked = s.players
-          .filter((p) => p.target && p.team)
-          .sort((a, b) => b.score - a.score)
-          .filter((p, index, list) => list.findIndex((x) => x.target === p.target) === index)
-          .slice(0, 12);
-        const key = picked.map((p) => `${p.name}:${p.target}:${p.team}`).join("|");
+        const lit = s.territories.filter((t) => t.owner);
+        const key = lit.map((t) => t.id).join("|");
         if (key === markerSignature) return;
         markerSignature = key;
         markers.removeAll(true);
-        picked.forEach((player, index) => {
-          const province = provinces.find((p) => p.id === player.target);
+        lit.forEach((territory, index) => {
+          const province = provinces.find((p) => p.id === territory.id);
           if (!province) return;
           const position = project(province.center);
-          const color = Phaser.Display.Color.HexStringToColor(
-            s.settings.teams.find((team) => team.id === player.team)?.color ?? "#ffd34e",
-          ).color;
-          const marker = this.add.container(position.x + (index % 2 ? 12 : -12), position.y - 4);
-          const halo = this.add.circle(0, 0, 12, color, 0.22);
-          const badge = this.add.circle(0, 0, 8, 0x11172a, 1).setStrokeStyle(2, color, 1);
-          const initial = this.add.text(0, 0, player.name.slice(0, 1).toUpperCase(), { fontFamily: "Arial Black, sans-serif", fontSize: "9px", color: "#ffffff" }).setOrigin(0.5);
-          const crown = this.add.text(0, -15, "♛", { fontSize: "12px", color: "#ffe36a", stroke: "#523600", strokeThickness: 2 }).setOrigin(0.5);
-          marker.add([halo, badge, initial, crown]);
+          const marker = this.add.container(position.x + (index % 2 ? 5 : -5), position.y - 4);
+          const halo = this.add.circle(0, 0, 11, 0xffcf43, 0.22);
+          const bulb = this.add.circle(0, 0, 5, 0xfff4ae, 1).setStrokeStyle(1.5, 0xffaa18, 1);
+          const sparkle = this.add.text(0, -11, "✦", { fontFamily: "Arial Black, sans-serif", fontSize: "10px", color: "#fff2a0", stroke: "#6f3e00", strokeThickness: 1 }).setOrigin(0.5);
+          marker.add([halo, bulb, sparkle]);
           markers.add(marker);
-          this.tweens.add({ targets: halo, scale: 1.55, alpha: 0, duration: 1050, repeat: -1, ease: "Sine.easeOut" });
-          this.tweens.add({ targets: marker, y: marker.y - 3, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: index * 80 });
+          this.tweens.add({ targets: halo, scale: 1.45, alpha: 0.06, duration: 1300, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: index * 55 });
         });
       }
       burst(position: { x: number; y: number }, color: number, count: number, radius: number) {
@@ -134,14 +125,12 @@ export function BattleMap({
           onComplete: () => flash.destroy(),
         });
       }
-      showEffect(e: State["effects"][number], s: State) {
+      showEffect(e: State["effects"][number], _s: State) {
         const province = provinces.find((p) => p.id === e.province);
         if (!province) return;
         active++;
         const position = project(province.center);
-        const color = Phaser.Display.Color.HexStringToColor(
-          s.settings.teams.find((team) => team.id === e.team)?.color ?? "#ffffff",
-        ).color;
+        const color = 0xffcf43;
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (!reduced) this.focusEvent(position, e.kind);
         this.flashProvince(province, color, e.kind === "capture");
@@ -150,7 +139,7 @@ export function BattleMap({
         };
         const ring = this.add.circle(position.x, position.y, 7, color, 0.22).setStrokeStyle(2.5, color, 1);
         const label = this.add
-          .text(position.x, position.y - 4, e.kind === "capture" ? `♛ ${e.player}\nCHIẾM ĐÓNG` : `${e.kind === "heal" ? "+" : "⚔"}${e.power}`, {
+          .text(position.x, position.y - 4, e.kind === "capture" ? `✦ ${e.player}\nBẬT ĐÈN` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
             fontFamily: "Arial Black, sans-serif",
             fontSize: e.kind === "capture" ? "14px" : "12px",
             align: "center",
@@ -171,9 +160,9 @@ export function BattleMap({
         if (e.kind === "attack") {
           const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
           const start = { x: position.x + Math.cos(angle) * 170, y: position.y + Math.sin(angle) * 170 };
-          const comet = this.add.circle(start.x, start.y, 6, 0xffe06a, 1).setStrokeStyle(2, 0xffffff, 0.9);
-          const tail = this.add.circle(start.x, start.y, 13, color, 0.18);
-          this.tweens.add({ targets: [comet, tail], x: position.x, y: position.y, duration: reduced ? 1 : 390, ease: "Quad.easeIn", onComplete: () => { comet.destroy(); tail.destroy(); explode(); } });
+          const comet = this.add.circle(start.x, start.y, 5, 0xfff4ab, 1).setStrokeStyle(1.5, 0xffffff, 0.9);
+          const tail = Array.from({ length: 5 }, (_, i) => this.add.circle(start.x - i * 7, start.y + i * 7, 8 - i, 0xffb52e, 0.34 - i * 0.05));
+          this.tweens.add({ targets: [comet, ...tail], x: position.x, y: position.y, duration: reduced ? 1 : 430, ease: "Quad.easeIn", onComplete: () => { comet.destroy(); tail.forEach((part) => part.destroy()); explode(); } });
         } else {
           if (e.kind === "capture") {
             const flash = this.add.circle(position.x, position.y, 12, 0xfff3a2, 0.85);
@@ -190,18 +179,20 @@ export function BattleMap({
           graphics.clear();
           for (const p of provinces) {
             const t = s.territories.find((t) => t.id === p.id);
-            const color =
-              s.settings.teams.find((x) => x.id === t?.owner)?.color ??
-              "#234352";
-            graphics.fillStyle(
-              Phaser.Display.Color.HexStringToColor(color).color,
-              0.85,
-            );
-            graphics.lineStyle(0.8, 0x91c6ce, 0.7);
+            const lit = Boolean(t?.owner);
+            // Thành phố chưa có tương tác nằm tối; khi được thắp, lớp vàng và
+            // viền trắng tạo cảm giác ánh sáng lan ra, không còn màu phe.
+            graphics.fillStyle(lit ? 0xffc83d : 0x10294a, lit ? 0.96 : 0.88);
+            graphics.lineStyle(lit ? 5 : 1, lit ? 0xffbd32 : 0x4e7196, lit ? 0.18 : 0.72);
             for (const polygon of p.polygons) {
               const points = polygon[0].map(project);
               graphics.fillPoints(points, true);
               graphics.strokePoints(points, true);
+            }
+            if (lit) {
+              graphics.lineStyle(1.15, 0xfff5a8, 0.96);
+              for (const polygon of p.polygons)
+                graphics.strokePoints(polygon[0].map(project), true);
             }
           }
         }

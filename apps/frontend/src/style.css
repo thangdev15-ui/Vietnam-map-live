@@ -671,7 +671,7 @@ label select {
   overflow: hidden;
   color: #f8f4d9;
   background:
-    radial-gradient(ellipse at 50% 38%, #143aa2 0%, #07134d 38%, #02071e 78%),
+    radial-gradient(ellipse at 50% 38%, #12377c 0%, #071747 38%, #02071e 78%),
     #02071e;
   font-family: Inter, Arial, sans-serif;
   isolation: isolate;
@@ -725,7 +725,7 @@ label select {
 .portrait-arena::after { content:""; position:absolute; inset:auto 3% 1% 3%; height:16%; background:radial-gradient(ellipse, #f6ad2d46, transparent 65%); pointer-events:none; }
 .portrait-arena .map-canvas { inset: 2.5% 2% 7%; z-index: 1; filter: drop-shadow(0 0 8px #59b6ff68) drop-shadow(0 0 22px #f4bd4359); }
 .portrait-arena .map-canvas canvas { width:100% !important; height:100% !important; }
-.portrait-map-glow { position:absolute; inset: 13% 12% 12%; z-index: 0; border-radius:50%; background:radial-gradient(ellipse, #e4a42928, transparent 64%); filter: blur(12px); }
+.portrait-map-glow { position:absolute; inset: 13% 12% 12%; z-index: 0; border-radius:50%; background:radial-gradient(ellipse, #ffd54b40, #2e71d638 37%, transparent 68%); filter: blur(14px); animation: mapBreath 4.5s ease-in-out infinite; }
 .portrait-province-chip { position:absolute; z-index:3; left:4%; top:4%; display:grid; grid-template-columns:auto 1fr; column-gap:6px; align-items:center; padding:7px 9px; max-width:40%; border:1px solid #f5ca5a9e; border-radius:7px; background:#08133ee8; box-shadow:0 5px 18px #0009; }
 .portrait-province-chip > span { width:8px; height:8px; border-radius:50%; grid-row:span 2; box-shadow:0 0 8px currentColor; }
 .portrait-province-chip b { font-size:clamp(9px,1.2vw,15px); }
@@ -771,6 +771,7 @@ label select {
 @keyframes livePulse { 50% { opacity:.35; transform:scale(.8); } }
 @keyframes featuredEnter { from { opacity:0; transform:translate(-50%,-42%) scale(.92); } }
 @keyframes eventSlam { 0% { opacity:0; transform:translate(-50%,-38%) scale(.72); } 68% { transform:translate(-50%,-52%) scale(1.06); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+@keyframes mapBreath { 50% { opacity:.62; transform:scale(1.07); } }
 @container (max-width: 600px) {
   .portrait-header { grid-template-columns: auto minmax(0, 1fr) auto; gap: 5px; }
   .portrait-title strong { font-size: 18px; white-space: normal; }

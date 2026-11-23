@@ -101,6 +101,21 @@ export class GameEngine {
     if (!s.enabled[e.type]) return "Loại sự kiện đã tắt";
     this.state.processed++;
     const text = norm(e.text ?? "");
+    // Broadcast "Thắp sáng": khán giả chỉ cần bình luận đúng tên tỉnh/thành.
+    // Owner "gold" chỉ giữ tương thích với dữ liệu lãnh thổ cũ, không hiển thị phe.
+    if (e.type === "comment") {
+      const cityText = text.replace(/^(thap sang|thap den|bat den)\s+/, "");
+      const province = this.provinces.find((t) => {
+        const name = norm(t.name);
+        const id = norm(t.id);
+        return cityText === name || cityText === id;
+      });
+      if (province) {
+        p.target = province.id;
+        p.team ??= "gold";
+        return this.act(p, "attack", s.hp, e.id);
+      }
+    }
     if (e.type === "comment") {
       const team = s.teams.find((t) => norm(t.keyword) === text);
       if (team) {
@@ -193,7 +208,7 @@ export class GameEngine {
         t.hp = s.hp;
         kind = "capture";
         this.log(
-          `${p.name} chiếm ${this.provinces.find((x) => x.id === t!.id)?.name}`,
+          `${p.name} thắp sáng ${this.provinces.find((x) => x.id === t!.id)?.name}`,
         );
       }
     }

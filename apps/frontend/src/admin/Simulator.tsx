@@ -60,25 +60,15 @@ export function Simulator({
         </label>
       </div>
       <p>
-        Bắt đầu trận ở Tổng quan. Chọn phe trước, đợi cooldown, rồi tấn công một
-        tỉnh.
+        Bắt đầu trận ở Tổng quan, rồi gửi đúng tên một tỉnh/thành để thắp đèn.
       </p>
       <div className="quick-commands" aria-label="Lệnh mẫu">
         <span>Lệnh mẫu:</span>
-        {state.settings.teams.map((team) => (
-          <button
-            key={team.id}
-            className="secondary"
-            onClick={() => setMessage(team.keyword)}
-          >
-            Chọn {team.name}
-          </button>
-        ))}
         <button
           className="secondary"
-          onClick={() => setMessage(`${state.settings.attackWord} hà nội`)}
+          onClick={() => setMessage("hà nội")}
         >
-          Tấn công Hà Nội
+          Thắp sáng Hà Nội
         </button>
         <button
           className="secondary"

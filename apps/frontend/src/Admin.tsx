@@ -124,20 +124,20 @@ export function Admin({
         (entry: { id: string }) => entry.id === `demo:${id}`,
       )?.result;
       const labels: Record<string, string> = {
-        "Đã tham gia": `✓ ${viewer} đã chọn phe. Bây giờ gửi lệnh tấn công.`,
-        attack: "✓ Đòn tấn công đã được áp dụng lên tỉnh đã chọn.",
-        capture: "✓ Đã chiếm tỉnh thành công.",
-        heal: "✓ Đã hồi phục tỉnh cùng phe.",
-        boost: "✓ Đã tiếp viện phe.",
+        "Đã tham gia": `✓ ${viewer} đã tham gia. Hãy gõ tên một tỉnh/thành để thắp đèn.`,
+        attack: "✓ Năng lượng đã được gửi tới thành phố đã chọn.",
+        capture: "✓ Thành phố đã bừng sáng.",
+        heal: "✓ Đã tiếp năng lượng cho thành phố.",
+        boost: "✓ Đã thêm ánh sáng.",
         cooldown: `⏱ Hãy chờ ${Math.ceil(state.settings.cooldown / 1000)} giây rồi gửi bình luận tiếp.`,
         spam: "⚠ Người chơi đang vượt giới hạn spam.",
         "Không tìm thấy tỉnh":
-          "⚠ Không tìm thấy tỉnh. Ví dụ đúng: “đánh hà nội”.",
+          "⚠ Không tìm thấy tỉnh. Ví dụ đúng: “hà nội”.",
         "Không có lệnh phù hợp":
-          "⚠ Lệnh chưa đúng. Dùng “đỏ”, “đánh hà nội” hoặc “thủ hà nội”.",
-        "Hãy chọn phe trước": "⚠ Hãy gửi “đỏ”, “xanh” hoặc “vàng” trước.",
+          "⚠ Lệnh chưa đúng. Dùng đúng tên tỉnh/thành, ví dụ “hà nội”.",
+        "Hãy chọn phe trước": "⚠ Hãy bình luận tên tỉnh/thành trước.",
         "Chọn mục tiêu bằng bình luận trước":
-          "⚠ Hãy gửi “đánh hà nội” để chọn mục tiêu trước khi tặng quà.",
+          "⚠ Hãy gửi “hà nội” để chọn thành phố trước khi tặng quà.",
       };
       setNotice(
         labels[result ?? ""] ?? `Kết quả: ${result ?? "đã gửi sự kiện"}`,
