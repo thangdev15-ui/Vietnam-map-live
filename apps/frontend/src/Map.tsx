@@ -207,8 +207,25 @@ export function BattleMap({
           this.tweens.add({ targets: [comet, ...tail], x: position.x, y: position.y, duration: reduced ? 1 : 430, ease: "Quad.easeIn", onComplete: () => { comet.destroy(); tail.forEach((part) => part.destroy()); explode(); } });
         } else {
           if (e.kind === "capture") {
-            const flash = this.add.circle(position.x, position.y, 12, 0xfff3a2, 0.85);
-            this.tweens.add({ targets: flash, scale: 7, alpha: 0, duration: 600, ease: "Cubic.easeOut", onComplete: () => flash.destroy() });
+            // Đèn lồng trôi chậm từ bầu trời tới thành phố, thay cho đòn đánh.
+            const lantern = this.add.container(
+              Phaser.Math.Clamp(position.x + Phaser.Math.Between(-125, 125), 24, 676),
+              -26,
+            );
+            const glow = this.add.circle(0, 0, 19, 0xffb72e, 0.17);
+            const body = this.add.ellipse(0, 0, 15, 22, 0xffa51d, 1).setStrokeStyle(1.5, 0xffec91, 1);
+            const core = this.add.ellipse(0, 0, 6, 13, 0xffffbe, 0.96);
+            const cap = this.add.rectangle(0, -12, 7, 2, 0x7d3f0b, 1);
+            const tassel = this.add.line(0, 14, 0, 0, 0, 7, 0xffdb72, 0.9).setLineWidth(1.2);
+            lantern.add([glow, body, core, cap, tassel]);
+            this.tweens.add({ targets: lantern, x: position.x, y: position.y - 2, rotation: Phaser.Math.FloatBetween(-0.13, 0.13), duration: reduced ? 1 : 1050, ease: "Sine.easeInOut", onComplete: () => {
+              lantern.destroy();
+              const flash = this.add.circle(position.x, position.y, 12, 0xfff3a2, 0.85);
+              this.tweens.add({ targets: flash, scale: 7, alpha: 0, duration: 650, ease: "Cubic.easeOut", onComplete: () => flash.destroy() });
+              explode();
+            }});
+            this.tweens.add({ targets: lantern, angle: 5, duration: 720, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+            return;
           }
           explode();
         }

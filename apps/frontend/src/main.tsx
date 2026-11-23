@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import type { Province, State } from "../../../packages/shared/index";
 import { BattleMap } from "./Map";
 import { Admin } from "./Admin";
+import { LightSoundscape } from "./audio";
 import "./style.css";
 
 function PortraitBroadcast({
@@ -19,6 +20,11 @@ function PortraitBroadcast({
   setSelected: (id: string) => void;
   connected: boolean;
 }) {
+  const sound = useRef<LightSoundscape | undefined>(undefined);
+  const announced = useRef<string | undefined>(undefined);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceName, setVoiceName] = useState("");
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
   const leader = state.players[0];
@@ -26,6 +32,32 @@ function PortraitBroadcast({
   const latestProvinceName = latestEffect
     ? provinces.find((p) => p.id === latestEffect.province)?.name
     : undefined;
+  useEffect(() => {
+    const readVoices = () => {
+      const available = window.speechSynthesis?.getVoices() ?? [];
+      setVoices(available.filter((voice) => voice.lang.toLowerCase().startsWith("vi")));
+    };
+    readVoices();
+    window.speechSynthesis?.addEventListener("voiceschanged", readVoices);
+    return () => window.speechSynthesis?.removeEventListener("voiceschanged", readVoices);
+  }, []);
+  useEffect(() => {
+    if (!latestEffect) return;
+    if (!announced.current) {
+      announced.current = latestEffect.id;
+      return;
+    }
+    if (announced.current === latestEffect.id) return;
+    announced.current = latestEffect.id;
+    if (audioEnabled && latestEffect.kind === "capture")
+      sound.current?.announce(latestEffect.player, latestProvinceName ?? "thành phố", voiceName);
+  }, [audioEnabled, latestEffect?.id, latestEffect?.kind, latestEffect?.player, latestProvinceName, voiceName]);
+  useEffect(() => () => sound.current?.stop(), []);
+  const enableAudio = () => {
+    sound.current ??= new LightSoundscape();
+    sound.current.start();
+    setAudioEnabled(true);
+  };
   const selectedProvince = provinces.find((p) => p.id === selected) ?? provinces[0];
   const selectedTerritory = state.territories.find(
     (t) => t.id === selectedProvince.id,
@@ -54,6 +86,17 @@ function PortraitBroadcast({
           {state.phase === "running"
             ? `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`
             : "SẴN SÀNG"}
+        </div>
+        <div className="portrait-audio">
+          <button onClick={enableAudio} className={audioEnabled ? "active" : ""}>
+            {audioEnabled ? "♫ ĐANG BẬT" : "🔈 BẬT ÂM"}
+          </button>
+          {audioEnabled && voices.length > 0 && (
+            <select aria-label="Giọng đọc tiếng Việt" value={voiceName} onChange={(event) => setVoiceName(event.target.value)}>
+              <option value="">Giọng Việt mặc định</option>
+              {voices.map((voice) => <option key={voice.name} value={voice.name}>{voice.name}</option>)}
+            </select>
+          )}
         </div>
       </header>
 

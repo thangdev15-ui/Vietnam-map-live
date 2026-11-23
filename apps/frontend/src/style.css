@@ -691,7 +691,7 @@ label select {
 .portrait-header {
   min-height: 9.6vh;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 1.2vw;
   align-items: center;
   padding: max(12px, env(safe-area-inset-top)) 3.2% 8px;
@@ -715,6 +715,10 @@ label select {
 .portrait-title span { display: block; font-size: clamp(7px, 1.05vw, 13px); font-weight: 800; letter-spacing: .16em; color: #abbfe9; }
 .portrait-title strong { display: block; margin-top: 3px; font-size: clamp(12px, 2.35vw, 29px); letter-spacing: -.04em; color: var(--gold-hot); text-shadow: 0 0 18px #f8bd2d9c; white-space: nowrap; }
 .portrait-clock { font-variant-numeric: tabular-nums; font-weight: 900; font-size: clamp(10px, 1.6vw, 20px); color: var(--gold); }
+.portrait-audio { display:flex; align-items:center; gap:4px; }
+.portrait-audio button { border:1px solid #ffd86b8c; border-radius:5px; padding:5px 6px; color:#fff6c9; background:#142d5d; font-size:clamp(7px,.85vw,10px); font-weight:900; white-space:nowrap; }
+.portrait-audio button.active { color:#19340d; background:#d9f17b; border-color:#effeac; }
+.portrait-audio select { max-width:112px; border:1px solid #7998d4; border-radius:5px; padding:4px; color:#eaf1ff; background:#0b1d45; font-size:clamp(6px,.75vw,9px); }
 .portrait-progress { padding: 8px 4.5% 9px; background: #050d38d9; border-bottom: 1px solid #244684; }
 .portrait-progress div:first-child { display:flex; justify-content:space-between; gap: 8px; font-size: clamp(9px, 1.3vw, 16px); }
 .portrait-progress span { color:#a8bfeb; font-weight: 800; }
@@ -773,7 +777,8 @@ label select {
 @keyframes eventSlam { 0% { opacity:0; transform:translate(-50%,-38%) scale(.72); } 68% { transform:translate(-50%,-52%) scale(1.06); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
 @keyframes mapBreath { 50% { opacity:.62; transform:scale(1.07); } }
 @container (max-width: 600px) {
-  .portrait-header { grid-template-columns: auto minmax(0, 1fr) auto; gap: 5px; }
+  .portrait-header { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 5px; }
+  .portrait-audio select { display:none; }
   .portrait-title strong { font-size: 18px; white-space: normal; }
   .portrait-title span { font-size: 8px; }
   .portrait-clock { font-size: 10px; white-space: nowrap; }
