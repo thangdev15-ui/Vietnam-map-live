@@ -76,7 +76,11 @@ export function createApp(token: string, dbPath: string) {
       const result = (await response.json()) as { async?: string; error?: number; message?: string };
       if (!response.ok || result.error || !result.async) {
         console.error("FPT TTS failed", response.status, result.message);
-        r.status(502).json({ error: "FPT.AI không nhận được yêu cầu đọc" });
+        r.status(502).json({
+          error: "FPT.AI không nhận được yêu cầu đọc",
+          providerStatus: response.status,
+          providerMessage: result.message?.slice(0, 300),
+        });
         return;
       }
       const id = randomUUID();
