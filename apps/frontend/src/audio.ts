@@ -1,10 +1,15 @@
 /** Gentle, generated soundscape: no downloaded music or autoplay dependency. */
+export function hasVietnameseVoice() {
+  return (window.speechSynthesis?.getVoices() ?? []).some((voice) =>
+    voice.lang.toLowerCase().startsWith("vi"),
+  );
+}
+
 export class LightSoundscape {
   private context?: AudioContext;
   private ambience?: GainNode;
   private enabled = false;
   private lastVoiceAt = 0;
-  private narration?: HTMLAudioElement;
 
   start() {
     if (this.enabled) return;
@@ -46,41 +51,36 @@ export class LightSoundscape {
     oscillator.stop(now + 0.9);
   }
 
-  async announce(player: string, city: string) {
+  announce(player: string, city: string) {
     if (!this.enabled) return;
     const now = Date.now();
     if (now - this.lastVoiceAt < 2600) return;
     this.lastVoiceAt = now;
     this.lantern();
-    try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: `${player} đã thắp sáng ${city}` }),
-      });
-      if (!response.ok) return;
-      this.narration?.pause();
-      const url = URL.createObjectURL(await response.blob());
-      const narration = new Audio(url);
-      this.narration = narration;
-      narration.volume = 0.9;
-      narration.onplay = () => {
-        if (this.ambience && this.context)
-          this.ambience.gain.linearRampToValueAtTime(0.026, this.context.currentTime + 0.12);
-      };
-      narration.onended = () => {
-        URL.revokeObjectURL(url);
-        if (this.ambience && this.context)
-          this.ambience.gain.linearRampToValueAtTime(0.08, this.context.currentTime + 0.45);
-      };
-      await narration.play();
-    } catch {
-      // Visual light-up continues when the voice provider is unavailable.
-    }
+    const voice = (window.speechSynthesis?.getVoices() ?? []).find((candidate) =>
+      candidate.lang.toLowerCase().startsWith("vi"),
+    );
+    // Never fall back to an English system voice for Vietnamese player names.
+    if (!voice || !window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(`${player} đã thắp sáng ${city}`);
+    utterance.lang = "vi-VN";
+    utterance.voice = voice;
+    utterance.rate = 0.9;
+    utterance.pitch = 1.04;
+    utterance.onstart = () => {
+      if (this.ambience && this.context)
+        this.ambience.gain.linearRampToValueAtTime(0.026, this.context.currentTime + 0.12);
+    };
+    utterance.onend = () => {
+      if (this.ambience && this.context)
+        this.ambience.gain.linearRampToValueAtTime(0.08, this.context.currentTime + 0.45);
+    };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
   }
 
   stop() {
-    this.narration?.pause();
+    window.speechSynthesis?.cancel();
     this.context?.close();
     this.context = undefined;
     this.enabled = false;

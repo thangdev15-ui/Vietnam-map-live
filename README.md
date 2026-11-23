@@ -23,7 +23,7 @@ Cài thủ công: `npm ci`, sao chép `.env.example` thành `.env` và đặt to
 
 Để kết nối TikTok LIVE thật, thêm `TIKTOK_SIGN_API_KEY` vào `.env`. Khóa này lấy từ Euler Stream, dịch vụ ký mà `tiktok-live-connector` 2.5.0 sử dụng; sau khi lưu file cần khởi động lại backend. Khóa chỉ nằm trên máy chủ, không nhập vào giao diện quản trị.
 
-Để phát lời đọc khi có thành phố được thắp sáng, đặt `ELEVENLABS_API_KEY` và `ELEVENLABS_VOICE_ID` trong `.env` hoặc Environment của Render. Chọn voice tiếng Việt và lấy Voice ID trong ElevenLabs; bấm **BẬT ÂM** trên broadcast một lần để trình duyệt được phép phát tiếng.
+Lời đọc khi có thành phố được thắp sáng dùng `SpeechSynthesis` với giọng tiếng Việt cài trên máy đang mở broadcast, không gọi dịch vụ ngoài và không tốn phí. Bấm **BẬT ÂM** một lần để trình duyệt được phép phát tiếng. Nếu nút hiện `CÀI GIỌNG VIỆT`, cài một giọng Vietnamese trong cài đặt macOS rồi tải lại trang.
 
 ## Chơi thử ngay
 
