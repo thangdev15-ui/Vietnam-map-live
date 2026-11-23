@@ -81,8 +81,17 @@ export function createApp(token: string, dbPath: string) {
         },
       );
       if (!response.ok) {
-        console.error("ElevenLabs TTS failed", response.status);
-        r.status(502).json({ error: "Không tạo được giọng đọc" });
+        const providerMessage = (await response.text()).slice(0, 500);
+        console.error("ElevenLabs TTS failed", response.status, providerMessage);
+        const error =
+          response.status === 401 || response.status === 403
+            ? "ElevenLabs từ chối API key hoặc key chưa có quyền Text to Speech"
+            : response.status === 404
+              ? "Không tìm thấy Voice ID ElevenLabs"
+              : response.status === 429
+                ? "ElevenLabs đã hết quota hoặc giới hạn lượt đọc"
+                : "Không tạo được giọng đọc từ ElevenLabs";
+        r.status(502).json({ error });
         return;
       }
       r.set("Cache-Control", "no-store");
