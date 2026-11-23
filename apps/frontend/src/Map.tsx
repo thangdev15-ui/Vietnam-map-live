@@ -28,7 +28,9 @@ export function BattleMap({
     let markerSignature = "";
     let active = 0;
     let cameraReset: Phaser.Time.TimerEvent | undefined;
+    let tourReset: Phaser.Time.TimerEvent | undefined;
     let effectsReady = false;
+    let touring = 0;
     class MapScene extends Phaser.Scene {
       create() {
         scene.current = this;
@@ -42,6 +44,24 @@ export function BattleMap({
           this.tweens.add({ targets: dot, alpha: 0.08, y: y - Phaser.Math.Between(6, 18), duration: Phaser.Math.Between(1600, 3400), yoyo: true, repeat: -1, delay: i * 45 });
         }
         stars.destroy();
+        // Khi yên tĩnh, máy quay trôi giữa các vùng để bản đồ luôn sống.
+        this.time.addEvent({
+          delay: 4600,
+          loop: true,
+          callback: () => {
+            if (active || !effectsReady) return;
+            const province = provinces[touring++ % provinces.length];
+            const point = project(province.center);
+            const camera = this.cameras.main;
+            camera.pan(point.x, point.y, 1400, "Sine.easeInOut");
+            camera.zoomTo(1.1, 1400, "Sine.easeInOut");
+            tourReset = this.time.delayedCall(2350, () => {
+              if (active) return;
+              camera.pan(350, 410, 1450, "Sine.easeInOut");
+              camera.zoomTo(1, 1450, "Sine.easeInOut");
+            });
+          },
+        });
         this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
           for (const p of provinces) {
             if (
@@ -100,12 +120,13 @@ export function BattleMap({
       focusEvent(position: { x: number; y: number }, kind: string) {
         const camera = this.cameras.main;
         cameraReset?.remove(false);
+        tourReset?.remove(false);
         const capture = kind === "capture";
-        camera.pan(position.x, position.y, capture ? 270 : 200, "Sine.easeOut");
-        camera.zoomTo(capture ? 1.52 : 1.27, capture ? 270 : 200, "Sine.easeOut");
-        cameraReset = this.time.delayedCall(capture ? 1450 : 820, () => {
-          camera.pan(350, 410, capture ? 460 : 330, "Sine.easeInOut");
-          camera.zoomTo(1, capture ? 460 : 330, "Sine.easeInOut");
+        camera.pan(position.x, position.y, capture ? 480 : 320, "Cubic.easeOut");
+        camera.zoomTo(capture ? 1.74 : 1.35, capture ? 480 : 320, "Cubic.easeOut");
+        cameraReset = this.time.delayedCall(capture ? 1700 : 980, () => {
+          camera.pan(350, 410, capture ? 760 : 460, "Sine.easeInOut");
+          camera.zoomTo(1, capture ? 760 : 460, "Sine.easeInOut");
         });
       }
       flashProvince(province: Province, color: number, capture: boolean) {
@@ -148,13 +169,34 @@ export function BattleMap({
             strokeThickness: 4,
           })
           .setOrigin(0.5);
+        const lightPlayer = () => {
+          if (e.kind !== "capture") return;
+          const card = this.add.container(position.x + 18, position.y - 24).setScale(0.25).setAlpha(0);
+          const halo = this.add.circle(0, 0, 15, 0xffc83d, 0.22);
+          const avatar = this.add.circle(0, 0, 9, 0x17284a, 1).setStrokeStyle(2, 0xffed9a, 1);
+          const initial = this.add.text(0, 0, e.player.slice(0, 1).toUpperCase(), { fontFamily: "Arial Black, sans-serif", fontSize: "9px", color: "#fff6c1" }).setOrigin(0.5);
+          const name = e.player.length > 12 ? `${e.player.slice(0, 11)}…` : e.player;
+          const plate = this.add.rectangle(31, -2, Math.max(44, name.length * 6.3 + 12), 17, 0xffe485, 0.96).setStrokeStyle(1, 0xffffff, 0.72);
+          const text = this.add.text(31, -2, name, { fontFamily: "Arial Black, sans-serif", fontSize: "8px", color: "#3d2400" }).setOrigin(0.5);
+          card.add([plate, text, halo, avatar, initial]);
+          this.tweens.add({ targets: card, alpha: 1, scale: 1, y: card.y - 7, duration: 340, ease: "Back.easeOut" });
+          this.tweens.add({ targets: halo, scale: 1.8, alpha: 0, delay: 180, duration: 900, ease: "Sine.easeOut" });
+          this.time.delayedCall(2600, () => this.tweens.add({ targets: card, alpha: 0, y: card.y - 8, duration: 350, onComplete: () => card.destroy() }));
+        };
         const explode = () => {
           this.burst(position, color, e.kind === "capture" ? 22 : 11, e.kind === "capture" ? 70 : 36);
-          this.tweens.add({ targets: ring, scale: e.kind === "capture" ? 10 : 5.2, alpha: 0, duration: e.kind === "capture" ? 900 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
+          this.tweens.add({ targets: ring, scale: e.kind === "capture" ? 11 : 5.2, alpha: 0, duration: e.kind === "capture" ? 1040 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
           this.tweens.add({ targets: label, y: position.y - (e.kind === "capture" ? 54 : 32), alpha: 0, duration: e.kind === "capture" ? 1200 : 760, ease: "Cubic.easeOut", onComplete: () => { label.destroy(); finish(); } });
           if (!reduced) {
-            this.cameras.main.shake(e.kind === "capture" ? 170 : 75, e.kind === "capture" ? 0.004 : 0.0015);
+            this.cameras.main.shake(e.kind === "capture" ? 120 : 60, e.kind === "capture" ? 0.0025 : 0.0015);
             if (e.kind === "capture") this.cameras.main.flash(95, 255, 224, 123, false);
+          }
+          if (e.kind === "capture") {
+            [120, 250].forEach((delay, index) => this.time.delayedCall(delay, () => {
+              const wave = this.add.circle(position.x, position.y, 10, 0xffed83, 0.08).setStrokeStyle(2, 0xffd34c, 0.76 - index * 0.18);
+              this.tweens.add({ targets: wave, scale: 8 + index * 2, alpha: 0, duration: 920, ease: "Cubic.easeOut", onComplete: () => wave.destroy() });
+            }));
+            lightPlayer();
           }
         };
         if (e.kind === "attack") {

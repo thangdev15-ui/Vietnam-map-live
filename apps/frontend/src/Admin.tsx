@@ -152,30 +152,9 @@ export function Admin({
         { length: 30 },
         (_, i) => "bot-" + crypto.randomUUID().slice(0, 5) + "-" + i,
       );
-      await api(
-        "events",
-        token,
-        users.map((u) => ({
-          id: crypto.randomUUID(),
-          source: "demo",
-          type: "comment",
-          userId: u,
-          username: u,
-          text:
-            state.settings.teams[
-              Math.floor(Math.random() * state.settings.teams.length)
-            ].keyword,
-          count: 1,
-        })),
-      );
       setDemoTotal(users.length);
-      await new Promise((r) =>
-        setTimeout(
-          r,
-          users.length * 450 + state.settings.cooldown + 700,
-        ),
-      );
       setNotice("Đang trình diễn trận mô phỏng…");
+      const cities = [...provinces].sort(() => Math.random() - 0.5);
       for (let wave = 0; wave < users.length; wave++) {
         setDemoWave(wave + 1);
         await api(
@@ -187,10 +166,7 @@ export function Admin({
             type: "comment" as const,
             userId: u,
             username: u,
-            text:
-              state.settings.attackWord +
-              " " +
-              provinces[Math.floor(Math.random() * provinces.length)].name,
+            text: cities[wave % cities.length].name,
             count: 1,
           })),
         );
