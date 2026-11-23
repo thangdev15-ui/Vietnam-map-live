@@ -24,6 +24,16 @@ const ev = (id: string, userId = id, text = "đỏ") => ({
   count: 1,
 });
 describe("Server integration", () => {
+  it("does not expose or use ElevenLabs without server configuration", async () => {
+    const url = await start();
+    const response = await fetch(url + "/api/tts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "Thắng đã thắp sáng Hà Nội" }),
+    });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Chưa cấu hình giọng ElevenLabs" });
+  });
   it("authenticates admin, validates settings, denies spoofed live source", async () => {
     const url = await start();
     expect((await fetch(url + "/api/admin/status")).status).toBe(401);

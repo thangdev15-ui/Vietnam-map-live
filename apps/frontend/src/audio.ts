@@ -4,6 +4,7 @@ export class LightSoundscape {
   private ambience?: GainNode;
   private enabled = false;
   private lastVoiceAt = 0;
+  private narration?: HTMLAudioElement;
 
   start() {
     if (this.enabled) return;
@@ -45,37 +46,41 @@ export class LightSoundscape {
     oscillator.stop(now + 0.9);
   }
 
-  announce(player: string, city: string, voiceName?: string) {
-    if (!this.enabled || !window.speechSynthesis) return;
+  async announce(player: string, city: string) {
+    if (!this.enabled) return;
     const now = Date.now();
     if (now - this.lastVoiceAt < 2600) return;
     this.lastVoiceAt = now;
     this.lantern();
-    const utterance = new SpeechSynthesisUtterance(
-      `${player} đã thắp sáng ${city}`,
-    );
-    utterance.lang = "vi-VN";
-    utterance.rate = 0.92;
-    utterance.pitch = 1.06;
-    const voices = window.speechSynthesis.getVoices();
-    const voice =
-      voices.find((candidate) => candidate.name === voiceName) ??
-      voices.find((candidate) => candidate.lang.toLowerCase().startsWith("vi"));
-    // Không để trình duyệt tự rơi về English khi máy chưa cài giọng Việt.
-    if (!voice || !voice.lang.toLowerCase().startsWith("vi")) return;
-    utterance.voice = voice;
-    utterance.onstart = () => {
-      if (this.ambience) this.ambience.gain.linearRampToValueAtTime(0.026, this.context!.currentTime + 0.12);
-    };
-    utterance.onend = () => {
-      if (this.ambience) this.ambience.gain.linearRampToValueAtTime(0.08, this.context!.currentTime + 0.45);
-    };
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: `${player} đã thắp sáng ${city}` }),
+      });
+      if (!response.ok) return;
+      this.narration?.pause();
+      const url = URL.createObjectURL(await response.blob());
+      const narration = new Audio(url);
+      this.narration = narration;
+      narration.volume = 0.9;
+      narration.onplay = () => {
+        if (this.ambience && this.context)
+          this.ambience.gain.linearRampToValueAtTime(0.026, this.context.currentTime + 0.12);
+      };
+      narration.onended = () => {
+        URL.revokeObjectURL(url);
+        if (this.ambience && this.context)
+          this.ambience.gain.linearRampToValueAtTime(0.08, this.context.currentTime + 0.45);
+      };
+      await narration.play();
+    } catch {
+      // Visual light-up continues when the voice provider is unavailable.
+    }
   }
 
   stop() {
-    window.speechSynthesis?.cancel();
+    this.narration?.pause();
     this.context?.close();
     this.context = undefined;
     this.enabled = false;

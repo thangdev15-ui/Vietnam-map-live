@@ -7,6 +7,10 @@ Repository đã có `render.yaml` để đưa **cả game, admin, Socket.IO và 
 3. Bấm **Apply**. Khi trạng thái `Live`, mở URL `https://vietnam-map-live.onrender.com` mà Render cấp. Admin ở `/admin`, broadcast ở `/?broadcast=1`.
 4. Lưu `ADMIN_TOKEN` trong phần Environment của service. Render tự sinh token này; dùng token đó để đăng nhập `/admin`.
 
+## Giọng đọc ElevenLabs
+
+Mở dashboard ElevenLabs, chọn một voice tiếng Việt và sao chép **Voice ID**. Tạo một API key ở phần Developers/API keys. Trong Render → service → **Environment**, thêm `ELEVENLABS_API_KEY` và `ELEVENLABS_VOICE_ID`; có thể giữ `ELEVENLABS_MODEL=eleven_flash_v2_5` để ưu tiên độ trễ thấp khi LIVE. Lưu thay đổi rồi Manual Deploy. API key chỉ nằm ở Render: broadcast gọi `/api/tts`, server tạo MP3 và trả âm thanh về trình duyệt. Không dán API key vào ô chat, admin hay frontend.
+
 Blueprint hiện dùng gói **Free**, không cần thẻ. Dữ liệu SQLite đặt ở `/tmp/game.sqlite`, nên chỉ phù hợp để demo: dữ liệu trận mất khi Render restart, redeploy hoặc tự ngủ sau 15 phút không có truy cập. Khi cần chạy LIVE thật, đổi sang gói trả phí và thêm persistent disk, rồi đặt `DATABASE_PATH=/var/data/game.sqlite`. Không chuyển service SQLite này thành nhiều instance.
 
 Sau mỗi lần `git push origin main`, Render sẽ tự build và deploy lại. Kiểm tra `https://<ten-service>.onrender.com/api/health` phải trả về `{ "ok": true }`.

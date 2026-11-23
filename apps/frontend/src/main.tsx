@@ -23,8 +23,6 @@ function PortraitBroadcast({
   const sound = useRef<LightSoundscape | undefined>(undefined);
   const announced = useRef<string | undefined>(undefined);
   const [audioEnabled, setAudioEnabled] = useState(false);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [voiceName, setVoiceName] = useState("");
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
   const leader = state.players[0];
@@ -32,15 +30,6 @@ function PortraitBroadcast({
   const latestProvinceName = latestEffect
     ? provinces.find((p) => p.id === latestEffect.province)?.name
     : undefined;
-  useEffect(() => {
-    const readVoices = () => {
-      const available = window.speechSynthesis?.getVoices() ?? [];
-      setVoices(available.filter((voice) => voice.lang.toLowerCase().startsWith("vi")));
-    };
-    readVoices();
-    window.speechSynthesis?.addEventListener("voiceschanged", readVoices);
-    return () => window.speechSynthesis?.removeEventListener("voiceschanged", readVoices);
-  }, []);
   useEffect(() => {
     if (!latestEffect) return;
     if (!announced.current) {
@@ -50,8 +39,8 @@ function PortraitBroadcast({
     if (announced.current === latestEffect.id) return;
     announced.current = latestEffect.id;
     if (audioEnabled && latestEffect.kind === "capture")
-      sound.current?.announce(latestEffect.player, latestProvinceName ?? "thành phố", voiceName);
-  }, [audioEnabled, latestEffect?.id, latestEffect?.kind, latestEffect?.player, latestProvinceName, voiceName]);
+      void sound.current?.announce(latestEffect.player, latestProvinceName ?? "thành phố");
+  }, [audioEnabled, latestEffect?.id, latestEffect?.kind, latestEffect?.player, latestProvinceName]);
   useEffect(() => () => sound.current?.stop(), []);
   const enableAudio = () => {
     sound.current ??= new LightSoundscape();
@@ -89,16 +78,8 @@ function PortraitBroadcast({
         </div>
         <div className="portrait-audio">
           <button onClick={enableAudio} className={audioEnabled ? "active" : ""}>
-            {audioEnabled
-              ? voices.length ? "♫ ĐANG BẬT" : "CÀI GIỌNG VIỆT"
-              : "🔈 BẬT ÂM"}
+            {audioEnabled ? "♫ GIỌNG ELEVENLABS" : "🔈 BẬT ÂM"}
           </button>
-          {audioEnabled && voices.length > 0 && (
-            <select aria-label="Giọng đọc tiếng Việt" value={voiceName} onChange={(event) => setVoiceName(event.target.value)}>
-              <option value="">Giọng Việt mặc định</option>
-              {voices.map((voice) => <option key={voice.name} value={voice.name}>{voice.name}</option>)}
-            </select>
-          )}
         </div>
       </header>
 
