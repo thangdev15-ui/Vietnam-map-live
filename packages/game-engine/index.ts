@@ -113,7 +113,9 @@ export class GameEngine {
       if (province) {
         p.target = province.id;
         p.team ??= "gold";
-        return this.act(p, "attack", s.hp, e.id);
+        // A city accumulates light from every viewer. Four standard comments
+        // (25 light each) complete its lantern, rather than one comment winning it.
+        return this.act(p, "attack", s.attack, e.id, "light");
       }
     }
     if (e.type === "comment") {
@@ -181,6 +183,7 @@ export class GameEngine {
     skill: "attack" | "heal" | "boost",
     power: number,
     id: string,
+    visualKind?: string,
   ) {
     const s = this.state.settings;
     let t = this.state.territories.find((t) => t.id === p.target);
@@ -193,7 +196,7 @@ export class GameEngine {
     if (skill === "heal" && t.owner !== p.team)
       return "Chỉ phòng thủ tỉnh cùng phe";
     if (skill === "attack" && t.owner === p.team) return "Tỉnh đã thuộc phe";
-    let kind: string = skill;
+    let kind: string = visualKind ?? skill;
     if (skill === "heal") {
       power = Math.min(power, s.hp - t.hp);
       t.hp += power;

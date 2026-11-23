@@ -96,7 +96,7 @@ function PortraitBroadcast({
         <div className="portrait-province-chip">
           <span style={{ background: selectedTeam?.color ?? "#7f9aa7" }} />
           <b>{selectedProvince.name}</b>
-          <small>{selectedTeam ? "ĐÃ LÊN ĐÈN" : "CHƯA LÊN ĐÈN"} · {Math.round(selectedTerritory?.hp ?? 0)} NL</small>
+          <small>{selectedTeam ? "ĐÃ LÊN ĐÈN" : `${Math.round(((state.settings.hp - (selectedTerritory?.hp ?? state.settings.hp)) / state.settings.hp) * 100)}% ÁNH SÁNG`}</small>
         </div>
         <aside className="portrait-side-panel">
           <section className="portrait-card conqueror-card">

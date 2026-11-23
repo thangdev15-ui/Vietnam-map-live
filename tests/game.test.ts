@@ -31,8 +31,11 @@ describe("Game rules", () => {
     g.apply(event("xanh"));
     expect(g.state.players[0].team).toBe("red");
   });
-  it("lights a city from its name without requiring a team command", () => {
+  it("accumulates viewer light before a city is fully lit", () => {
     const g = game();
+    expect(g.apply(event("Hà Nội"))).toBe("light");
+    expect(g.state.territories[0]).toMatchObject({ owner: null, hp: 75 });
+    for (let i = 0; i < 2; i++) expect(g.apply(event("Hà Nội"))).toBe("light");
     expect(g.apply(event("Hà Nội"))).toBe("capture");
     expect(g.state.territories[0]).toMatchObject({ owner: "gold", hp: 100 });
     expect(g.state.players[0]).toMatchObject({ team: "gold", target: "ha-noi", score: 100 });

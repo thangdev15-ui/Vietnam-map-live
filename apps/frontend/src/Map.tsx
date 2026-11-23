@@ -122,11 +122,12 @@ export function BattleMap({
         cameraReset?.remove(false);
         tourReset?.remove(false);
         const capture = kind === "capture";
-        camera.pan(position.x, position.y, capture ? 480 : 320, "Cubic.easeOut");
-        camera.zoomTo(capture ? 1.74 : 1.35, capture ? 480 : 320, "Cubic.easeOut");
-        cameraReset = this.time.delayedCall(capture ? 1700 : 980, () => {
-          camera.pan(350, 410, capture ? 760 : 460, "Sine.easeInOut");
-          camera.zoomTo(1, capture ? 760 : 460, "Sine.easeInOut");
+        const lighting = kind === "light";
+        camera.pan(position.x, position.y, capture ? 560 : 360, "Cubic.easeOut");
+        camera.zoomTo(capture ? 2.28 : lighting ? 1.28 : 1.35, capture ? 560 : 360, "Cubic.easeOut");
+        cameraReset = this.time.delayedCall(capture ? 2900 : lighting ? 920 : 980, () => {
+          camera.pan(350, 410, capture ? 980 : 460, "Sine.easeInOut");
+          camera.zoomTo(1, capture ? 980 : 460, "Sine.easeInOut");
         });
       }
       flashProvince(province: Province, color: number, capture: boolean) {
@@ -154,15 +155,17 @@ export function BattleMap({
         const color = 0xffcf43;
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (!reduced) this.focusEvent(position, e.kind);
-        this.flashProvince(province, color, e.kind === "capture");
+        const capture = e.kind === "capture";
+        const lighting = e.kind === "light";
+        this.flashProvince(province, color, capture);
         const finish = () => {
           active--;
         };
         const ring = this.add.circle(position.x, position.y, 7, color, 0.22).setStrokeStyle(2.5, color, 1);
         const label = this.add
-          .text(position.x, position.y - 4, e.kind === "capture" ? `✦ ${e.player}\nBẬT ĐÈN` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
+          .text(position.x, position.y - 4, capture ? `✦ ${e.player}\nTHẮP SÁNG` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
             fontFamily: "Arial Black, sans-serif",
-            fontSize: e.kind === "capture" ? "14px" : "12px",
+            fontSize: capture ? "14px" : "12px",
             align: "center",
             color: "#ffffff",
             stroke: "#09122b",
@@ -170,28 +173,30 @@ export function BattleMap({
           })
           .setOrigin(0.5);
         const lightPlayer = () => {
-          if (e.kind !== "capture") return;
-          const card = this.add.container(position.x + 18, position.y - 24).setScale(0.25).setAlpha(0);
+          if (!capture) return;
+          const card = this.add.container(position.x + 28, position.y - 27).setScale(0.25).setAlpha(0);
           const halo = this.add.circle(0, 0, 15, 0xffc83d, 0.22);
           const avatar = this.add.circle(0, 0, 9, 0x17284a, 1).setStrokeStyle(2, 0xffed9a, 1);
           const initial = this.add.text(0, 0, e.player.slice(0, 1).toUpperCase(), { fontFamily: "Arial Black, sans-serif", fontSize: "9px", color: "#fff6c1" }).setOrigin(0.5);
           const name = e.player.length > 12 ? `${e.player.slice(0, 11)}…` : e.player;
-          const plate = this.add.rectangle(31, -2, Math.max(44, name.length * 6.3 + 12), 17, 0xffe485, 0.96).setStrokeStyle(1, 0xffffff, 0.72);
-          const text = this.add.text(31, -2, name, { fontFamily: "Arial Black, sans-serif", fontSize: "8px", color: "#3d2400" }).setOrigin(0.5);
-          card.add([plate, text, halo, avatar, initial]);
+          const city = province.name.length > 14 ? `${province.name.slice(0, 13)}…` : province.name;
+          const plate = this.add.rectangle(39, -2, Math.max(70, name.length * 6.4 + 25), 27, 0xffe485, 0.98).setStrokeStyle(1, 0xffffff, 0.72);
+          const text = this.add.text(39, -6, name, { fontFamily: "Arial Black, sans-serif", fontSize: "8px", color: "#3d2400" }).setOrigin(0.5);
+          const subtext = this.add.text(39, 5, `THẮP ${city.toUpperCase()}`, { fontFamily: "Arial, sans-serif", fontStyle: "bold", fontSize: "5.5px", color: "#7b4800" }).setOrigin(0.5);
+          card.add([plate, text, subtext, halo, avatar, initial]);
           this.tweens.add({ targets: card, alpha: 1, scale: 1, y: card.y - 7, duration: 340, ease: "Back.easeOut" });
           this.tweens.add({ targets: halo, scale: 1.8, alpha: 0, delay: 180, duration: 900, ease: "Sine.easeOut" });
           this.time.delayedCall(2600, () => this.tweens.add({ targets: card, alpha: 0, y: card.y - 8, duration: 350, onComplete: () => card.destroy() }));
         };
         const explode = () => {
-          this.burst(position, color, e.kind === "capture" ? 22 : 11, e.kind === "capture" ? 70 : 36);
-          this.tweens.add({ targets: ring, scale: e.kind === "capture" ? 11 : 5.2, alpha: 0, duration: e.kind === "capture" ? 1040 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
-          this.tweens.add({ targets: label, y: position.y - (e.kind === "capture" ? 54 : 32), alpha: 0, duration: e.kind === "capture" ? 1200 : 760, ease: "Cubic.easeOut", onComplete: () => { label.destroy(); finish(); } });
+          this.burst(position, color, capture ? 26 : lighting ? 14 : 11, capture ? 78 : lighting ? 43 : 36);
+          this.tweens.add({ targets: ring, scale: capture ? 13 : lighting ? 6.8 : 5.2, alpha: 0, duration: capture ? 1280 : lighting ? 720 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
+          this.tweens.add({ targets: label, y: position.y - (capture ? 62 : 32), alpha: 0, duration: capture ? 1500 : 760, ease: "Cubic.easeOut", onComplete: () => { label.destroy(); finish(); } });
           if (!reduced) {
-            this.cameras.main.shake(e.kind === "capture" ? 120 : 60, e.kind === "capture" ? 0.0025 : 0.0015);
-            if (e.kind === "capture") this.cameras.main.flash(95, 255, 224, 123, false);
+            this.cameras.main.shake(capture ? 120 : 60, capture ? 0.0025 : 0.0015);
+            if (capture) this.cameras.main.flash(95, 255, 224, 123, false);
           }
-          if (e.kind === "capture") {
+          if (capture) {
             [120, 250].forEach((delay, index) => this.time.delayedCall(delay, () => {
               const wave = this.add.circle(position.x, position.y, 10, 0xffed83, 0.08).setStrokeStyle(2, 0xffd34c, 0.76 - index * 0.18);
               this.tweens.add({ targets: wave, scale: 8 + index * 2, alpha: 0, duration: 920, ease: "Cubic.easeOut", onComplete: () => wave.destroy() });
@@ -206,8 +211,8 @@ export function BattleMap({
           const tail = Array.from({ length: 5 }, (_, i) => this.add.circle(start.x - i * 7, start.y + i * 7, 8 - i, 0xffb52e, 0.34 - i * 0.05));
           this.tweens.add({ targets: [comet, ...tail], x: position.x, y: position.y, duration: reduced ? 1 : 430, ease: "Quad.easeIn", onComplete: () => { comet.destroy(); tail.forEach((part) => part.destroy()); explode(); } });
         } else {
-          if (e.kind === "capture") {
-            // Đèn lồng trôi chậm từ bầu trời tới thành phố, thay cho đòn đánh.
+          if (capture || lighting) {
+            // Mỗi comment thả một ngọn đèn; đèn cuối cùng mở cảnh thắp sáng cận cảnh.
             const lantern = this.add.container(
               Phaser.Math.Clamp(position.x + Phaser.Math.Between(-125, 125), 24, 676),
               -26,
@@ -218,10 +223,10 @@ export function BattleMap({
             const cap = this.add.rectangle(0, -12, 7, 2, 0x7d3f0b, 1);
             const tassel = this.add.line(0, 14, 0, 0, 0, 7, 0xffdb72, 0.9).setLineWidth(1.2);
             lantern.add([glow, body, core, cap, tassel]);
-            this.tweens.add({ targets: lantern, x: position.x, y: position.y - 2, rotation: Phaser.Math.FloatBetween(-0.13, 0.13), duration: reduced ? 1 : 1050, ease: "Sine.easeInOut", onComplete: () => {
+            this.tweens.add({ targets: lantern, x: position.x, y: position.y - 2, rotation: Phaser.Math.FloatBetween(-0.13, 0.13), duration: reduced ? 1 : capture ? 1250 : 760, ease: "Sine.easeInOut", onComplete: () => {
               lantern.destroy();
               const flash = this.add.circle(position.x, position.y, 12, 0xfff3a2, 0.85);
-              this.tweens.add({ targets: flash, scale: 7, alpha: 0, duration: 650, ease: "Cubic.easeOut", onComplete: () => flash.destroy() });
+              this.tweens.add({ targets: flash, scale: capture ? 8 : 4.5, alpha: 0, duration: capture ? 720 : 460, ease: "Cubic.easeOut", onComplete: () => flash.destroy() });
               explode();
             }});
             this.tweens.add({ targets: lantern, angle: 5, duration: 720, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
@@ -239,10 +244,18 @@ export function BattleMap({
           for (const p of provinces) {
             const t = s.territories.find((t) => t.id === p.id);
             const lit = Boolean(t?.owner);
-            // Thành phố chưa có tương tác nằm tối; khi được thắp, lớp vàng và
-            // viền trắng tạo cảm giác ánh sáng lan ra, không còn màu phe.
-            graphics.fillStyle(lit ? 0xffc83d : 0x10294a, lit ? 0.96 : 0.88);
-            graphics.lineStyle(lit ? 5 : 1, lit ? 0xffbd32 : 0x4e7196, lit ? 0.18 : 0.72);
+            const progress = Phaser.Math.Clamp(1 - (t?.hp ?? s.settings.hp) / s.settings.hp, 0, 1);
+            // Unlit provinces brighten gradually with each viewer comment.
+            const unlit = Phaser.Display.Color.IntegerToColor(0x10294a);
+            const warm = Phaser.Display.Color.IntegerToColor(0xe6a51f);
+            const lerp = (from: number, to: number) => Math.round(from + (to - from) * progress);
+            const fillColor = lit ? 0xffc83d : Phaser.Display.Color.GetColor(
+              lerp(unlit.red, warm.red),
+              lerp(unlit.green, warm.green),
+              lerp(unlit.blue, warm.blue),
+            );
+            graphics.fillStyle(fillColor, lit ? 0.96 : 0.88 + progress * 0.08);
+            graphics.lineStyle(lit ? 5 : 1 + progress * 2.2, lit ? 0xffbd32 : 0x4e7196, lit ? 0.18 : 0.72 + progress * 0.2);
             for (const polygon of p.polygons) {
               const points = polygon[0].map(project);
               graphics.fillPoints(points, true);
