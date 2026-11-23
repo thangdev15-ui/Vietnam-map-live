@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import type { Province, State } from "../../../packages/shared/index";
 import { BattleMap } from "./Map";
 import { Admin } from "./Admin";
-import { hasVietnameseVoice, LightSoundscape } from "./audio";
+import { LightSoundscape } from "./audio";
 import "./style.css";
 
 function PortraitBroadcast({
@@ -23,7 +23,6 @@ function PortraitBroadcast({
   const sound = useRef<LightSoundscape | undefined>(undefined);
   const announced = useRef<string | undefined>(undefined);
   const [audioEnabled, setAudioEnabled] = useState(false);
-  const [nativeVoiceReady, setNativeVoiceReady] = useState(hasVietnameseVoice);
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
   const leader = state.players[0];
@@ -40,18 +39,12 @@ function PortraitBroadcast({
     if (announced.current === latestEffect.id) return;
     announced.current = latestEffect.id;
     if (audioEnabled && latestEffect.kind === "capture")
-      sound.current?.announce(latestEffect.player, latestProvinceName ?? "thành phố");
+      void sound.current?.announce(latestEffect.player, latestProvinceName ?? "thành phố");
   }, [audioEnabled, latestEffect?.id, latestEffect?.kind, latestEffect?.player, latestProvinceName]);
-  useEffect(() => {
-    const refresh = () => setNativeVoiceReady(hasVietnameseVoice());
-    window.speechSynthesis?.addEventListener("voiceschanged", refresh);
-    return () => window.speechSynthesis?.removeEventListener("voiceschanged", refresh);
-  }, []);
   useEffect(() => () => sound.current?.stop(), []);
   const enableAudio = () => {
     sound.current ??= new LightSoundscape();
     sound.current.start();
-    setNativeVoiceReady(hasVietnameseVoice());
     setAudioEnabled(true);
   };
   const selectedProvince = provinces.find((p) => p.id === selected) ?? provinces[0];
@@ -86,7 +79,7 @@ function PortraitBroadcast({
         <div className="portrait-audio">
           <button onClick={enableAudio} className={audioEnabled ? "active" : ""}>
             {audioEnabled
-              ? nativeVoiceReady ? "♫ GIỌNG VIỆT MÁY" : "CÀI GIỌNG VIỆT"
+              ? "♫ GIỌNG FPT.AI"
               : "🔈 BẬT ÂM"}
           </button>
         </div>

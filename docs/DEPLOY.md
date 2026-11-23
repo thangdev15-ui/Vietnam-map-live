@@ -7,9 +7,9 @@ Repository đã có `render.yaml` để đưa **cả game, admin, Socket.IO và 
 3. Bấm **Apply**. Khi trạng thái `Live`, mở URL `https://vietnam-map-live.onrender.com` mà Render cấp. Admin ở `/admin`, broadcast ở `/?broadcast=1`.
 4. Lưu `ADMIN_TOKEN` trong phần Environment của service. Render tự sinh token này; dùng token đó để đăng nhập `/admin`.
 
-## Giọng đọc miễn phí
+## Giọng đọc FPT.AI
 
-Broadcast dùng `SpeechSynthesis` của trình duyệt với voice tiếng Việt cài trên máy phát. Không cần API key, không dùng dịch vụ ngoài và không phát sinh quota. Bấm **BẬT ÂM** một lần khi mở broadcast. Nếu nút báo `CÀI GIỌNG VIỆT`, cài voice Vietnamese trong macOS rồi tải lại trang.
+Tạo API key tại `console.fpt.ai`, bật Text to Speech rồi thêm `FPT_TTS_API_KEY` vào Render Environment. Mặc định game dùng `banmai` (nữ miền Bắc); đổi `FPT_TTS_VOICE` thành `lannhi`, `leminh`, `myan`, `thuminh`, `giahuy`, hoặc `linhsan` để chọn giọng khác. Key chỉ nằm trên server. FPT free tier xử lý theo hàng đợi, vì thế game thắp sáng trước và phát lời đọc khi MP3 đã sẵn sàng.
 
 Blueprint hiện dùng gói **Free**, không cần thẻ. Dữ liệu SQLite đặt ở `/tmp/game.sqlite`, nên chỉ phù hợp để demo: dữ liệu trận mất khi Render restart, redeploy hoặc tự ngủ sau 15 phút không có truy cập. Khi cần chạy LIVE thật, đổi sang gói trả phí và thêm persistent disk, rồi đặt `DATABASE_PATH=/var/data/game.sqlite`. Không chuyển service SQLite này thành nhiều instance.
 

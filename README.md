@@ -23,7 +23,7 @@ Cài thủ công: `npm ci`, sao chép `.env.example` thành `.env` và đặt to
 
 Để kết nối TikTok LIVE thật, thêm `TIKTOK_SIGN_API_KEY` vào `.env`. Khóa này lấy từ Euler Stream, dịch vụ ký mà `tiktok-live-connector` 2.5.0 sử dụng; sau khi lưu file cần khởi động lại backend. Khóa chỉ nằm trên máy chủ, không nhập vào giao diện quản trị.
 
-Lời đọc khi có thành phố được thắp sáng dùng `SpeechSynthesis` với giọng tiếng Việt cài trên máy đang mở broadcast, không gọi dịch vụ ngoài và không tốn phí. Bấm **BẬT ÂM** một lần để trình duyệt được phép phát tiếng. Nếu nút hiện `CÀI GIỌNG VIỆT`, cài một giọng Vietnamese trong cài đặt macOS rồi tải lại trang.
+Lời đọc khi có thành phố được thắp sáng dùng FPT.AI TTS. Thêm `FPT_TTS_API_KEY` ở `.env` hoặc Render Environment; mặc định dùng giọng `banmai`, có thể đổi qua `lannhi`, `leminh`, `myan`, `thuminh`, `giahuy`, hoặc `linhsan`. Bấm **BẬT ÂM** một lần để trình duyệt được phép phát tiếng. FPT xử lý free tier theo hàng đợi nên lời đọc có thể đến sau hiệu ứng vài giây.
 
 ## Chơi thử ngay
 

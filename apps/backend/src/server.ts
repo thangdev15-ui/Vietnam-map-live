@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "node:http";
-import { timingSafeEqual } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import helmet from "helmet";
@@ -38,6 +38,7 @@ export function createApp(token: string, dbPath: string) {
   const app = express();
   const http = createServer(app);
   const io = new Server(http, { maxHttpBufferSize: 16384 });
+  const ttsJobs = new Map<string, { url: string; expiresAt: number }>();
   const publicState = () => ({
     ...engine.state,
     players: engine.state.players
@@ -52,6 +53,60 @@ export function createApp(token: string, dbPath: string) {
   app.get("/api/state", (_q, r) => r.json(publicState()));
   app.get("/api/map", (_q, r) => r.json(engine.provinces));
   app.get("/api/health", (_q, r) => r.json({ ok: true }));
+  const ttsLimit = rateLimit({ windowMs: 60_000, limit: 12, standardHeaders: true, legacyHeaders: false });
+  app.post("/api/tts", ttsLimit, async (q, r) => {
+    const { text } = z.object({ text: z.string().trim().min(3).max(180) }).parse(q.body);
+    const apiKey = process.env.FPT_TTS_API_KEY;
+    if (!apiKey) {
+      r.status(503).json({ error: "Chưa cấu hình FPT.AI TTS" });
+      return;
+    }
+    try {
+      const response = await fetch("https://api.fpt.ai/hmi/tts/v5", {
+        method: "POST",
+        headers: {
+          api_key: apiKey,
+          voice: process.env.FPT_TTS_VOICE ?? "banmai",
+          speed: process.env.FPT_TTS_SPEED ?? "0",
+          format: "mp3",
+          "content-type": "text/plain; charset=utf-8",
+        },
+        body: text,
+      });
+      const result = (await response.json()) as { async?: string; error?: number; message?: string };
+      if (!response.ok || result.error || !result.async) {
+        console.error("FPT TTS failed", response.status, result.message);
+        r.status(502).json({ error: "FPT.AI không nhận được yêu cầu đọc" });
+        return;
+      }
+      const id = randomUUID();
+      ttsJobs.set(id, { url: result.async, expiresAt: Date.now() + 180_000 });
+      r.status(202).json({ id });
+    } catch (error) {
+      console.error("FPT TTS request failed", error);
+      r.status(502).json({ error: "Không kết nối được FPT.AI" });
+    }
+  });
+  app.get("/api/tts/:id", async (q, r) => {
+    const job = ttsJobs.get(q.params.id);
+    if (!job || job.expiresAt < Date.now()) {
+      ttsJobs.delete(q.params.id);
+      r.status(404).json({ error: "Không còn yêu cầu giọng đọc" });
+      return;
+    }
+    try {
+      const audio = await fetch(job.url);
+      if (!audio.ok) {
+        r.status(202).json({ pending: true });
+        return;
+      }
+      ttsJobs.delete(q.params.id);
+      r.set("Cache-Control", "no-store");
+      r.type("audio/mpeg").send(Buffer.from(await audio.arrayBuffer()));
+    } catch {
+      r.status(202).json({ pending: true });
+    }
+  });
   app.use("/api/admin", (q, r, next) => {
     const got = Buffer.from(
       q.headers.authorization?.replace(/^Bearer /, "") ?? "",

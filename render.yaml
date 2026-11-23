@@ -18,3 +18,9 @@ services:
         generateValue: true
       - key: TIKTOK_SIGN_API_KEY
         sync: false
+      - key: FPT_TTS_API_KEY
+        sync: false
+      - key: FPT_TTS_VOICE
+        value: banmai
+      - key: FPT_TTS_SPEED
+        value: "0"

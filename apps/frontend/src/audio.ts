@@ -10,6 +10,7 @@ export class LightSoundscape {
   private ambience?: GainNode;
   private enabled = false;
   private lastVoiceAt = 0;
+  private narration?: HTMLAudioElement;
 
   start() {
     if (this.enabled) return;
@@ -51,36 +52,70 @@ export class LightSoundscape {
     oscillator.stop(now + 0.9);
   }
 
-  announce(player: string, city: string) {
+  async announce(player: string, city: string) {
     if (!this.enabled) return;
     const now = Date.now();
     if (now - this.lastVoiceAt < 2600) return;
     this.lastVoiceAt = now;
     this.lantern();
-    const voice = (window.speechSynthesis?.getVoices() ?? []).find((candidate) =>
-      candidate.lang.toLowerCase().startsWith("vi"),
-    );
-    // Never fall back to an English system voice for Vietnamese player names.
+    try {
+      const queued = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: `${player} đã thắp sáng ${city}` }),
+      });
+      if (!queued.ok) return this.speakNative(player, city);
+      const { id } = (await queued.json()) as { id?: string };
+      if (!id) return this.speakNative(player, city);
+      for (let attempt = 0; attempt < 38; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 1600));
+        const audio = await fetch(`/api/tts/${id}`);
+        if (audio.status === 202) continue;
+        if (!audio.ok) return this.speakNative(player, city);
+        this.playNarration(await audio.blob());
+        return;
+      }
+    } catch {
+      this.speakNative(player, city);
+    }
+  }
+
+  private playNarration(blob: Blob) {
+    this.narration?.pause();
+    const url = URL.createObjectURL(blob);
+    const narration = new Audio(url);
+    this.narration = narration;
+    narration.volume = 0.92;
+    narration.onplay = () => this.duck(true);
+    narration.onended = () => {
+      URL.revokeObjectURL(url);
+      this.duck(false);
+    };
+    void narration.play();
+  }
+
+  private duck(active: boolean) {
+    if (this.ambience && this.context)
+      this.ambience.gain.linearRampToValueAtTime(active ? 0.026 : 0.08, this.context.currentTime + (active ? 0.12 : 0.45));
+  }
+
+  private speakNative(player: string, city: string) {
+    const voice = (window.speechSynthesis?.getVoices() ?? []).find((candidate) => candidate.lang.toLowerCase().startsWith("vi"));
     if (!voice || !window.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(`${player} đã thắp sáng ${city}`);
     utterance.lang = "vi-VN";
     utterance.voice = voice;
     utterance.rate = 0.9;
     utterance.pitch = 1.04;
-    utterance.onstart = () => {
-      if (this.ambience && this.context)
-        this.ambience.gain.linearRampToValueAtTime(0.026, this.context.currentTime + 0.12);
-    };
-    utterance.onend = () => {
-      if (this.ambience && this.context)
-        this.ambience.gain.linearRampToValueAtTime(0.08, this.context.currentTime + 0.45);
-    };
+    utterance.onstart = () => this.duck(true);
+    utterance.onend = () => this.duck(false);
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }
 
   stop() {
     window.speechSynthesis?.cancel();
+    this.narration?.pause();
     this.context?.close();
     this.context = undefined;
     this.enabled = false;
