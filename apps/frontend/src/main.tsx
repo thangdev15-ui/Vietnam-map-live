@@ -89,7 +89,9 @@ function PortraitBroadcast({
         </div>
         <div className="portrait-audio">
           <button onClick={enableAudio} className={audioEnabled ? "active" : ""}>
-            {audioEnabled ? "♫ ĐANG BẬT" : "🔈 BẬT ÂM"}
+            {audioEnabled
+              ? voices.length ? "♫ ĐANG BẬT" : "CÀI GIỌNG VIỆT"
+              : "🔈 BẬT ÂM"}
           </button>
           {audioEnabled && voices.length > 0 && (
             <select aria-label="Giọng đọc tiếng Việt" value={voiceName} onChange={(event) => setVoiceName(event.target.value)}>

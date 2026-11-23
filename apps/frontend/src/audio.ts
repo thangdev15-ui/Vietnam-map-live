@@ -57,10 +57,13 @@ export class LightSoundscape {
     utterance.lang = "vi-VN";
     utterance.rate = 0.92;
     utterance.pitch = 1.06;
-    const voice = window.speechSynthesis
-      .getVoices()
-      .find((candidate) => candidate.name === voiceName);
-    if (voice) utterance.voice = voice;
+    const voices = window.speechSynthesis.getVoices();
+    const voice =
+      voices.find((candidate) => candidate.name === voiceName) ??
+      voices.find((candidate) => candidate.lang.toLowerCase().startsWith("vi"));
+    // Không để trình duyệt tự rơi về English khi máy chưa cài giọng Việt.
+    if (!voice || !voice.lang.toLowerCase().startsWith("vi")) return;
+    utterance.voice = voice;
     utterance.onstart = () => {
       if (this.ambience) this.ambience.gain.linearRampToValueAtTime(0.026, this.context!.currentTime + 0.12);
     };
