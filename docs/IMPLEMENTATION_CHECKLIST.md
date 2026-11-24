@@ -8,6 +8,16 @@
 | CORE-02 | Dùng dữ liệu vùng có thật | `assets/maps/historical63.json` | Mọi trận dùng 63 tỉnh có geometry thật | COMPLETED |
 | CORE-03 | Tách dữ liệu địa lý khỏi giao diện chiến trường | `shared`, `server`, `Map` | Thay skin không đổi danh sách 63 tỉnh | COMPLETED |
 
+## Terrain map theo polygon thật
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| TERRAIN-01 | Xuất silhouette và SVG từ đúng 63 polygon hiện có | `scripts/build-terrain-map.ts`, `assets/maps/historical63.json` | SVG chứa 63 vùng có ID ổn định, không có tọa độ giả | COMPLETED |
+| TERRAIN-02 | Dựng một texture terrain dùng làm chất liệu, không dùng ảnh bản đồ Việt Nam làm nền | `assets/terrain`, `Map.tsx` | Hình dạng đất liền chỉ đến từ polygon/SVG thật | COMPLETED |
+| TERRAIN-03 | Cắt texture theo từng tỉnh và thắp sáng bằng clip/mask đúng tỉnh | `Map.tsx` | Tỉnh sáng hiển thị phần terrain tương ứng; các tỉnh không lệch | COMPLETED |
+| TERRAIN-04 | Cảnh mới: flash, glow, vòng sáng và camera vẫn dùng đúng geometry | `Map.tsx` | Comment/gift vẫn focus và animation đúng tỉnh | IN_PROGRESS |
+| TERRAIN-05 | Kiểm tra ảnh overlay và luồng game | `docs/verification`, build/test | SVG overlay trùng khít texture map; không làm hỏng realtime | IN_PROGRESS |
+
 ## Broadcast và bản đồ
 
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
@@ -38,18 +48,6 @@
 | EVENT-03 | Rương ánh sáng ở mốc 5/10/20/50%/100% | `GameEngine`, `Map` | Mốc kích hoạt duy nhất, animation và log | COMPLETED |
 | EVENT-04 | Combo có timeout, thưởng, cấu hình admin, animation lớn | engine/map/admin | Combo hết hạn và có thưởng cấu hình được | COMPLETED |
 | EVENT-05 | Hoàn thành 100%: cinematic, top người chơi, lưu kết quả | engine/broadcast/store | Cảnh hoàn tất và match history đúng | COMPLETED |
-
-## Admin, realtime và độ tin cậy
-
-| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
-|---|---|---|---|---|
-| ADMIN-01 | Start/end/pause/resume/chốt vote/chọn skin | `server`, `Admin` | API bearer token + UI thật | COMPLETED |
-| ADMIN-02 | Kích hoạt event và cấu hình gift super | `server`, `Simulator`, `Gifts` | Chọn tỉnh hợp lệ và kích hoạt effect | COMPLETED |
-| ADMIN-03 | Cấu hình keyword vote, map active, chest/combo/light spread | admin/settings | Lưu server-validated ngoài trận | IN_PROGRESS |
-| RT-01 | Đồng bộ socket và phục hồi state | `server`, Socket.IO, SQLite | Client reconnect nhận state authoritative | COMPLETED |
-| RT-02 | Không xử lý lặp event/phiếu | `Processor`, `GameEngine` | Test duplicate/cooldown/voter ID qua | COMPLETED |
-| TEST-01 | Unit/integration cho vote, pause, super light | `tests` | `npm test` xanh | COMPLETED |
-| TEST-02 | Responsive và runtime production thực tế | Render/browser | Kiểm tra 9:16, 16:9 và endpoint deploy | IN_PROGRESS |
 
 ## Voice
 

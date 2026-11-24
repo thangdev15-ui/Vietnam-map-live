@@ -1,10 +1,71 @@
 import { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import type { Province, State } from "../../../packages/shared/index";
+import terrainSurface from "./assets/terrain-surface-v1.png";
 const project = ([x, y]: number[]) => ({
   x: (x - 101.5) * 62 + 50,
   y: (24 - y) * 49 + 20,
 });
+
+const ringPath = (ring: number[][]) =>
+  ring
+    .map((point, index) => {
+      const { x, y } = project(point);
+      return `${index ? "L" : "M"}${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ") + " Z";
+
+const polygonPath = (polygon: number[][][]) => polygon.map(ringPath).join(" ");
+
+/**
+ * The terrain is deliberately not a Vietnam image. This image is only a
+ * continuous land material. The real province polygons below are the sole
+ * source of Vietnam's shape, province boundaries, and all lighting masks.
+ */
+function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: State }) {
+  const prefix = useRef(`province-terrain-${Math.random().toString(36).slice(2)}`).current;
+  const territoryById = new Map(state.territories.map((territory) => [territory.id, territory]));
+  return (
+    <svg className="province-terrain" viewBox="0 0 700 820" aria-hidden="true">
+      <defs>
+        <clipPath id={`${prefix}-all`} clipPathUnits="userSpaceOnUse">
+          {provinces.flatMap((province) => province.polygons.map((polygon, index) => (
+            <path key={`${province.id}-${index}`} d={polygonPath(polygon)} fillRule="evenodd" clipRule="evenodd" />
+          )))}
+        </clipPath>
+        {provinces.map((province) => (
+          <clipPath key={province.id} id={`${prefix}-${province.id}`} clipPathUnits="userSpaceOnUse">
+            {province.polygons.map((polygon, index) => (
+              <path key={index} d={polygonPath(polygon)} fillRule="evenodd" clipRule="evenodd" />
+            ))}
+          </clipPath>
+        ))}
+      </defs>
+      <g clipPath={`url(#${prefix}-all)`}>
+        <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" />
+        <rect width="700" height="820" fill="#020915" opacity="0.62" />
+      </g>
+      {provinces.map((province) => {
+        const territory = territoryById.get(province.id);
+        const progress = Phaser.Math.Clamp(1 - (territory?.hp ?? state.settings.hp) / state.settings.hp, 0, 1);
+        const lit = Boolean(territory?.owner);
+        if (!lit && progress <= 0) return null;
+        return (
+          <g key={province.id} clipPath={`url(#${prefix}-${province.id})`}>
+            <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" opacity={lit ? 1 : 0.4 + progress * 0.45} />
+            <rect width="700" height="820" fill={lit ? "#ffc72e" : "#f0a628"} opacity={lit ? 0.34 : progress * 0.11} />
+            {lit && <rect width="700" height="820" fill="#fff3a2" opacity="0.1" className="terrain-lit-pulse" />}
+          </g>
+        );
+      })}
+      <g fill="none" stroke="#eec458" strokeOpacity="0.72" strokeWidth="1.05" vectorEffect="non-scaling-stroke">
+        {provinces.flatMap((province) => province.polygons.map((polygon, index) => (
+          <path key={`${province.id}-${index}`} d={polygonPath(polygon)} fillRule="evenodd" />
+        )))}
+      </g>
+    </svg>
+  );
+}
 export function BattleMap({
   provinces,
   state,
@@ -264,37 +325,10 @@ export function BattleMap({
         if (key !== previous) {
           previous = key;
           graphics.clear();
-          for (const p of provinces) {
-            const t = s.territories.find((t) => t.id === p.id);
-            const lit = Boolean(t?.owner);
-            const progress = Phaser.Math.Clamp(1 - (t?.hp ?? s.settings.hp) / s.settings.hp, 0, 1);
-            // Unlit provinces brighten gradually with each viewer comment.
-            const palette = s.settings.map === "cyber-grid"
-              ? { unlit: 0x071d35, warm: 0x08cfe9, lit: 0x30f5dc, line: 0x2f9aba, bright: 0xc8ffff }
-              : s.settings.map === "imperial-atlas"
-                ? { unlit: 0x211920, warm: 0xd14c20, lit: 0xffb326, line: 0x8a4035, bright: 0xffe4a3 }
-                : { unlit: 0x10294a, warm: 0xe6a51f, lit: 0xffc83d, line: 0x4e7196, bright: 0xfff5a8 };
-            const unlit = Phaser.Display.Color.IntegerToColor(palette.unlit);
-            const warm = Phaser.Display.Color.IntegerToColor(palette.warm);
-            const lerp = (from: number, to: number) => Math.round(from + (to - from) * progress);
-            const fillColor = lit ? palette.lit : Phaser.Display.Color.GetColor(
-              lerp(unlit.red, warm.red),
-              lerp(unlit.green, warm.green),
-              lerp(unlit.blue, warm.blue),
-            );
-            graphics.fillStyle(fillColor, lit ? 0.96 : 0.88 + progress * 0.08);
-            graphics.lineStyle(lit ? 5 : 1 + progress * 2.2, lit ? palette.warm : palette.line, lit ? 0.18 : 0.72 + progress * 0.2);
-            for (const polygon of p.polygons) {
-              const points = polygon[0].map(project);
-              graphics.fillPoints(points, true);
-              graphics.strokePoints(points, true);
-            }
-            if (lit) {
-              graphics.lineStyle(1.15, palette.bright, 0.96);
-              for (const polygon of p.polygons)
-                graphics.strokePoints(polygon[0].map(project), true);
-            }
-          }
+          // Province surfaces, boundaries and their steady lighting are SVG
+          // clipped by ProvinceTerrain. Do not redraw a second map on Phaser:
+          // its responsive canvas scale could create a visibly offset outline.
+          // Phaser remains the interaction and transient-effects layer.
         }
         this.refreshMarkers(s);
         if (!effectsReady) {
@@ -331,11 +365,9 @@ export function BattleMap({
     };
   }, [provinces]);
   return (
-    <div
-      ref={host}
-      className="map-canvas"
-      role="img"
-      aria-label="Bản đồ lãnh thổ Việt Nam. Chọn tỉnh bằng bản đồ hoặc danh sách bên cạnh."
-    />
+    <div className="map-canvas" role="img" aria-label="Bản đồ lãnh thổ Việt Nam. Chọn tỉnh bằng bản đồ hoặc danh sách bên cạnh.">
+      <ProvinceTerrain provinces={provinces} state={state} />
+      <div ref={host} className="map-phaser-layer" />
+    </div>
   );
 }
