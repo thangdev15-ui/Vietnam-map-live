@@ -72,6 +72,7 @@ export function createApp(token: string, dbPath: string) {
     engine = new GameEngine(load(selectedSettings), selectedSettings);
     engine.state.players = banned;
     processor.engine = engine;
+    store.set("settings", selectedSettings);
     engine.start();
     store.set("state", engine.state);
     io.emit("mapChanged");

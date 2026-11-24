@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { io as client } from "socket.io-client";
+import { existsSync, rmSync } from "node:fs";
 import { createApp } from "../apps/backend/src/server";
 import type { State } from "../packages/shared/index";
 const token = "test-token-with-32-characters-long";
@@ -8,8 +9,8 @@ afterEach(async () => {
   await server?.close();
   server = undefined;
 });
-async function start() {
-  server = createApp(token, ":memory:");
+async function start(dbPath = ":memory:") {
+  server = createApp(token, dbPath);
   await new Promise<void>((r) => server!.http.listen(0, "127.0.0.1", r));
   const addr = server.http.address() as { port: number };
   return "http://127.0.0.1:" + addr.port;
@@ -137,5 +138,19 @@ describe("Server integration", () => {
     const world = await (await fetch(url + "/api/map")).json() as { id: string }[];
     expect(world.length).toBeGreaterThan(150);
     expect(world.some((region) => region.id === "country-vnm")).toBe(true);
+  });
+  it("restores the selected map and its own territory schema after restart", async () => {
+    const dbPath = "/tmp/vietnam-map-live-reload-test.db";
+    if (existsSync(dbPath)) rmSync(dbPath);
+    await start(dbPath);
+    server!.activateMap("world");
+    await server!.close();
+    server = undefined;
+    await start(dbPath);
+    expect(server!.engine.state.settings.map).toBe("world");
+    expect(server!.engine.provinces.length).toBeGreaterThan(150);
+    await server!.close();
+    server = undefined;
+    if (existsSync(dbPath)) rmSync(dbPath);
   });
 });
