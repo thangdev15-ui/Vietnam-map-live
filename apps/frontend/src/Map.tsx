@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import Phaser from "phaser";
 import type { Province, State } from "../../../packages/shared/index";
 import terrainSurface from "./assets/terrain-surface-v1.png";
@@ -33,10 +33,10 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
   const frameRef = useRef<number | undefined>(undefined);
   const resetRef = useRef<number | undefined>(undefined);
   const vfx = useRef(new VFXManager()).current;
-  // State is delivered over Socket.IO. Track territory deltas rather than
-  // trusting a transient effect entry: this guarantees that camera + light
-  // target the province whose HP/owner actually changed.
-  const previousTerritories = useRef<Map<string, { hp: number; owner: string | null }> | undefined>(undefined);
+  // Effects are server-authoritative and carry the actual province ID. This
+  // lets terrain mode animate regular lights, gifts and Test Lab cues without
+  // deriving a target from a possibly unrelated territory delta.
+  const seenEffects = useRef<Set<string> | undefined>(undefined);
   const [event, setEvent] = useState<VfxJob>();
   const territoryById = new Map(state.territories.map((territory) => [territory.id, territory]));
   const moveCamera = (target: TerrainCamera, duration: number) => {
@@ -56,29 +56,18 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
   useEffect(() => {
     if (!terrainMode) {
       setEvent(undefined);
-      previousTerritories.current = undefined;
+      seenEffects.current = undefined;
       return;
     }
-    const before = previousTerritories.current;
-    const current = new Map(state.territories.map((territory) => [territory.id, { hp: territory.hp, owner: territory.owner }]));
-    previousTerritories.current = current;
-    // First state sync establishes the baseline; it must not replay old
-    // game events when an operator opens Broadcast.
-    if (!before) return;
-    const changed = state.territories.find((territory) => {
-      const old = before.get(territory.id);
-      return old && (old.owner !== territory.owner || territory.hp < old.hp - 0.01);
-    });
-    if (!changed) return;
-    const latest = [...state.effects].reverse().find((item) => item.province === changed.id) ?? {
-      id: `terrain-${changed.id}-${Date.now()}`,
-      province: changed.id,
-      player: changed.contributors?.at(-1)?.name ?? "Người chơi LIVE",
-      power: Math.max(1, Math.round((before.get(changed.id)?.hp ?? state.settings.hp) - changed.hp)),
-      kind: changed.owner ? "capture" : "light",
-      team: changed.owner ?? "neutral",
-    };
-    const province = provinces.find((item) => item.id === changed.id);
+    if (!seenEffects.current) {
+      seenEffects.current = new Set(state.effects.map((effect) => effect.id));
+      return;
+    }
+    const latest = state.effects.find((effect) => !seenEffects.current!.has(effect.id));
+    state.effects.forEach((effect) => seenEffects.current!.add(effect.id));
+    if (seenEffects.current.size > 3000) seenEffects.current = new Set(state.effects.map((effect) => effect.id));
+    if (!latest) return;
+    const province = provinces.find((item) => item.id === latest.province);
     if (!province) return;
     const point = project(province.center);
     if (!vfx.enqueue(latest)) return;
@@ -88,14 +77,15 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
     window.clearTimeout(resetRef.current);
     moveCamera({ x: point.x, y: point.y, scale: vfx.camera.focusScale(job) }, 620);
     resetRef.current = window.setTimeout(() => { setEvent(undefined); moveCamera({ x: 350, y: 410, scale: 1 }, 900); }, job.duration);
-  }, [terrainMode, state.territories, state.effects, state.settings.hp, provinces, vfx]);
+  }, [terrainMode, state.effects, provinces, vfx]);
   useEffect(() => () => { cancelAnimationFrame(frameRef.current ?? 0); window.clearTimeout(resetRef.current); }, []);
-  if (!terrainMode) return null;
-  const tx = 350 - camera.scale * camera.x;
-  const ty = 410 - camera.scale * camera.y;
   const eventProvince = event && provinces.find((province) => province.id === event.province);
   const eventPoint = eventProvince ? project(eventProvince.center) : undefined;
   const eventParticles = useMemo(() => event ? vfx.particles.seeds(event.id, event.tier === "spark" ? 14 : 34, event.tier === "epic" ? 50 : 34) : [], [event, vfx]);
+  const energyParticles = useMemo(() => event ? vfx.particles.seeds(`${event.id}-energy`, Math.min(48, Math.round(24 + event.density * 26)), 72 * event.intensity) : [], [event, vfx]);
+  if (!terrainMode) return null;
+  const tx = 350 - camera.scale * camera.x;
+  const ty = 410 - camera.scale * camera.y;
   const selectProvince = (pointer: ReactPointerEvent<SVGSVGElement>) => {
     const bounds = pointer.currentTarget.getBoundingClientRect();
     const x = ((pointer.clientX - bounds.left) / bounds.width * 700 - tx) / camera.scale;
@@ -184,9 +174,41 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
             <circle r="13" fill="#fff3ae" opacity=".92" className="terrain-core-flash" />
             <circle r="10" fill="none" stroke="#ffd34e" strokeWidth="3" className="terrain-event-ring" />
             <circle r="4" fill="#fff" />
-            <text y="-23" textAnchor="middle" className="terrain-event-user">{event.player}</text>
-            <text y="35" textAnchor="middle" className="terrain-event-score">+{event.power} ÁNH SÁNG</text>
+            {event.power > 0 && <>
+              <text y="-23" textAnchor="middle" className="terrain-event-user">{event.player}</text>
+              <text y="35" textAnchor="middle" className="terrain-event-score">+{event.power} ÁNH SÁNG</text>
+            </>}
           </g>
+          {event.energy === "meteor" && (
+            <g className="terrain-epic terrain-meteor" style={{ "--vfx-color": event.color, "--vfx-duration": `${event.duration}ms` } as CSSProperties}>
+              <path d={`M ${eventPoint.x - 175} ${eventPoint.y - 210} Q ${eventPoint.x - 25} ${eventPoint.y - 158} ${eventPoint.x} ${eventPoint.y}`} className="terrain-meteor-tail" />
+              <circle cx={eventPoint.x - 175} cy={eventPoint.y - 210} r={8 + event.intensity * 5} className="terrain-meteor-core">
+                <animateMotion path={`M 0 0 Q 150 52 175 210`} dur={`${Math.max(650, event.duration * .32)}ms`} fill="freeze" />
+              </circle>
+              {[0, 1, 2].map((index) => <circle key={index} cx={eventPoint.x} cy={eventPoint.y} r={8} className="terrain-impact-wave" style={{ animationDelay: `${index * 130 + event.duration * .31}ms` }} />)}
+            </g>
+          )}
+          {event.energy === "lightning" && (
+            <g className="terrain-epic terrain-lightning" style={{ "--vfx-color": event.color, "--vfx-duration": `${event.duration}ms` } as CSSProperties}>
+              <polyline points={`${eventPoint.x - 16},-45 ${eventPoint.x + 11},${eventPoint.y - 124} ${eventPoint.x - 12},${eventPoint.y - 69} ${eventPoint.x + 8},${eventPoint.y - 32} ${eventPoint.x},${eventPoint.y}`} className="terrain-lightning-bolt" />
+              <polyline points={`${eventPoint.x + 8},${eventPoint.y - 48} ${eventPoint.x + 39},${eventPoint.y - 27} ${eventPoint.x + 21},${eventPoint.y - 7}`} className="terrain-lightning-branch" />
+              <polyline points={`${eventPoint.x - 10},${eventPoint.y - 77} ${eventPoint.x - 42},${eventPoint.y - 51} ${eventPoint.x - 28},${eventPoint.y - 23}`} className="terrain-lightning-branch" />
+              <circle cx={eventPoint.x} cy={eventPoint.y} r={45 + event.intensity * 28} className="terrain-lightning-flash" />
+            </g>
+          )}
+          {event.energy === "vortex" && (
+            <g className="terrain-epic terrain-vortex" transform={`translate(${eventPoint.x} ${eventPoint.y})`} style={{ "--vfx-color": event.color, "--vfx-duration": `${event.duration}ms` } as CSSProperties}>
+              {[1, .73, .46].map((scale, index) => <ellipse key={scale} rx={58 * scale} ry={20 * scale} className="terrain-vortex-ring" style={{ animationDelay: `${index * 110}ms` }} />)}
+              {energyParticles.slice(0, 18).map((particle, index) => <circle key={index} cx={particle.x} cy={particle.y} r={particle.size} className="terrain-vortex-orb" style={{ animationDelay: `${particle.delay}ms` }} />)}
+              <circle r={9 + event.intensity * 5} className="terrain-vortex-core" />
+            </g>
+          )}
+          {event.energy === "starfall" && (
+            <g className="terrain-epic terrain-starfall" style={{ "--vfx-color": event.color, "--vfx-duration": `${event.duration}ms` } as CSSProperties}>
+              {energyParticles.slice(0, 14).map((particle, index) => <line key={index} x1={eventPoint.x + particle.x * 2} y1={eventPoint.y - 160 + particle.y} x2={eventPoint.x + particle.x * .22} y2={eventPoint.y + particle.y * .12} className="terrain-star" style={{ animationDelay: `${particle.delay}ms` }} />)}
+              <circle cx={eventPoint.x} cy={eventPoint.y} r={12} className="terrain-starfail-core" />
+            </g>
+          )}
         </>
       )}
       </g>
@@ -337,14 +359,15 @@ export function BattleMap({
         tourReset?.remove(false);
         const capture = kind === "capture";
         const superLight = kind === "super";
+        const epicEnergy = ["meteor", "lightning", "vortex", "starfall"].includes(kind);
         const combo = kind === "combo";
         const lighting = kind === "light";
         const gathering = kind === "gather";
-        camera.pan(position.x, position.y, superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
-        camera.zoomTo(superLight ? 2.55 : combo ? 1.8 : capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
-        cameraReset = this.time.delayedCall(superLight ? 3500 : combo ? 1800 : capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
-          camera.pan(350, 410, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
-          camera.zoomTo(1, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
+        camera.pan(position.x, position.y, epicEnergy || superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
+        camera.zoomTo(epicEnergy || superLight ? 2.42 : combo ? 1.8 : capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, epicEnergy || superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
+        cameraReset = this.time.delayedCall(epicEnergy || superLight ? 3500 : combo ? 1800 : capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
+          camera.pan(350, 410, epicEnergy || superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
+          camera.zoomTo(1, epicEnergy || superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
         });
       }
       flashProvince(province: Province, color: number, capture: boolean) {
@@ -404,6 +427,74 @@ export function BattleMap({
           this.tweens.add({ targets: rain, y: rain.y + 95, alpha: 0, delay: seed.delay, duration: 700, ease: "Quad.easeIn", onComplete: () => rain.destroy() });
         });
       }
+      epicEnergy(position: { x: number; y: number }, effect: VfxJob) {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const color = Phaser.Display.Color.HexStringToColor(effect.color).color;
+        const duration = reduced ? 1 : effect.duration;
+        const particles = Math.min(54, Math.max(12, Math.round(34 * effect.density)));
+        const impact = () => {
+          const core = this.add.circle(position.x, position.y, 9, 0xfff6c2, 1).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: core, scale: 9 + effect.intensity * 5, alpha: 0, duration: 680, ease: "Cubic.easeOut", onComplete: () => core.destroy() });
+          [0, 125, 270].forEach((delay, index) => this.time.delayedCall(delay, () => {
+            const wave = this.add.circle(position.x, position.y, 8, color, .09).setStrokeStyle(2.5, index ? color : 0xffffff, .95).setBlendMode(Phaser.BlendModes.ADD);
+            this.tweens.add({ targets: wave, scale: 8 + effect.intensity * 7 + index * 2, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => wave.destroy() });
+          }));
+          vfx.particles.seeds(`${effect.id}-impact`, particles, 94).forEach((seed, index) => {
+            const particle = pooledParticles.acquire().setPosition(position.x, position.y).setRadius(seed.size).setFillStyle(index % 5 ? color : 0xffffff, .96).setBlendMode(Phaser.BlendModes.ADD).setVisible(true).setAlpha(1);
+            this.tweens.add({ targets: particle, x: position.x + seed.x, y: position.y + seed.y, alpha: 0, scale: .2, delay: seed.delay * .38, duration: 760, ease: "Cubic.easeOut", onComplete: () => pooledParticles.release(particle) });
+          });
+          if (!reduced) this.cameras.main.shake(155, .004 + effect.intensity * .002);
+        };
+        if (effect.energy === "meteor") {
+          const start = { x: position.x - 190, y: position.y - 220 };
+          const tail = this.add.line(start.x, start.y, -74, -62, 0, 0, color, .72).setLineWidth(5).setBlendMode(Phaser.BlendModes.ADD);
+          const meteor = this.add.circle(start.x, start.y, 8 + effect.intensity * 4, 0xfff6bd, 1).setStrokeStyle(2.5, color, 1).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: [tail, meteor], x: position.x, y: position.y, duration: Math.max(520, duration * .32), ease: "Quad.easeIn", onComplete: () => { tail.destroy(); meteor.destroy(); impact(); } });
+          return;
+        }
+        if (effect.energy === "lightning") {
+          const bolt = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+          const drawBolt = (offset: number, width: number, alpha: number) => {
+            bolt.lineStyle(width, offset ? color : 0xffffff, alpha);
+            let x = position.x + offset;
+            let y = -40;
+            bolt.beginPath().moveTo(x, y);
+            while (y < position.y) { x += Phaser.Math.Between(-19, 19); y += Phaser.Math.Between(22, 42); bolt.lineTo(x, Math.min(y, position.y)); }
+            bolt.strokePath();
+          };
+          drawBolt(0, 4.8, 1); drawBolt(-28, 2.1, .74); drawBolt(28, 2.1, .74);
+          this.cameras.main.flash(reduced ? 1 : 110, 255, 235, 145, false);
+          // Hold the residual electrical arc long enough to read in a LIVE
+          // capture, then let it flicker out before the impact shockwave.
+          this.tweens.add({ targets: bolt, alpha: 0, delay: Math.max(820, duration * .42), duration: Math.max(420, duration * .16), ease: "Steps(3)", onComplete: () => { bolt.destroy(); impact(); } });
+          return;
+        }
+        if (effect.energy === "vortex") {
+          const vortex = this.add.container(position.x, position.y);
+          [1, .72, .45].forEach((scale, index) => {
+            const ring = this.add.ellipse(0, 0, 118 * scale, 34 * scale).setStrokeStyle(2.5, color, .88).setFillStyle(color, .025).setAngle(index * 60);
+            vortex.add(ring);
+          });
+          const core = this.add.circle(0, 0, 9, 0xfff5b3, 1).setStrokeStyle(2, color, 1);
+          vortex.add(core);
+          vfx.particles.seeds(`${effect.id}-vortex`, particles, 78).slice(0, 28).forEach((seed, index) => {
+            const orb = pooledParticles.acquire().setPosition(position.x + seed.x, position.y + seed.y).setRadius(Math.max(1.4, seed.size * .72)).setFillStyle(index % 4 ? color : 0xffffff, .9).setBlendMode(Phaser.BlendModes.ADD).setVisible(true).setAlpha(1);
+            this.tweens.add({ targets: orb, x: position.x, y: position.y, alpha: 0, scale: .15, delay: seed.delay * .5, duration: Math.max(820, duration * .35), ease: "Cubic.easeIn", onComplete: () => pooledParticles.release(orb) });
+          });
+          this.tweens.add({ targets: vortex, angle: 720, scale: 1.15 + effect.intensity * .22, duration: Math.max(1100, duration * .62), ease: "Cubic.easeInOut" });
+          this.tweens.add({ targets: core, scale: 2.2, alpha: .2, yoyo: true, repeat: 2, duration: 260 });
+          this.time.delayedCall(Math.max(880, duration * .62), () => { vortex.destroy(); impact(); });
+          return;
+        }
+        // Starfall uses many independent procedural trajectories, never video/GIF assets.
+        const stars = Math.min(20, Math.max(7, Math.round(12 * effect.density)));
+        let completed = 0;
+        for (let i = 0; i < stars; i++) {
+          const start = { x: position.x + Phaser.Math.Between(-160, 160), y: position.y - Phaser.Math.Between(110, 300) };
+          const streak = this.add.line(start.x, start.y, -22, -34, 0, 0, i % 4 ? color : 0xffffff, .92).setLineWidth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: streak, x: position.x + Phaser.Math.Between(-54, 54), y: position.y + Phaser.Math.Between(-38, 38), alpha: 0, delay: i * 72, duration: 570, ease: "Quad.easeIn", onComplete: () => { streak.destroy(); if (++completed === stars) impact(); } });
+        }
+      }
       showEffect(e: State["effects"][number], _s: State) {
         const province = provinces.find((p) => p.id === e.province);
         if (!province) return;
@@ -423,14 +514,16 @@ export function BattleMap({
         // Both views receive gameplay effects through the same bounded VFX
         // queue. Map 1 consumes this job here; Map 2 consumes it in SVG.
         const job = vfx.enqueue(e) ? vfx.next() : undefined;
-        if (job && (capture || superLight || chest || complete)) this.goldenAwakening(province, position, job);
+        const energy = job?.energy;
+        if (job && energy) this.epicEnergy(position, job);
+        else if (job && (capture || superLight || chest || complete)) this.goldenAwakening(province, position, job);
         this.flashProvince(province, color, capture || superLight);
         const finish = () => {
           active--;
         };
         const ring = this.add.circle(position.x, position.y, 7, color, 0.22).setStrokeStyle(2.5, color, 1);
         const label = this.add
-          .text(position.x, position.y - 4, complete ? "✦ VIỆT NAM BỪNG SÁNG ✦\nHOÀN THÀNH TOÀN BẢN ĐỒ" : superLight ? `☄ SIÊU THẮP SÁNG\n${e.player}` : chest ? `🎁 RƯƠNG ÁNH SÁNG\nMỐC ${e.power} TỈNH` : combo ? `✦ COMBO!\n${e.player} +${e.power}` : spread ? "≈ ÁNH SÁNG LAN TỎA" : capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
+          .text(position.x, position.y - 4, energy === "meteor" ? "☄ THIÊN THẠCH ÁNH SÁNG" : energy === "lightning" ? "ϟ THIÊN LÔI GIÁNG XUỐNG" : energy === "vortex" ? "◎ XOÁY NĂNG LƯỢNG" : energy === "starfall" ? "✦ MƯA SAO ÁNH SÁNG" : complete ? "✦ VIỆT NAM BỪNG SÁNG ✦\nHOÀN THÀNH TOÀN BẢN ĐỒ" : superLight ? `☄ SIÊU THẮP SÁNG\n${e.player}` : chest ? `🎁 RƯƠNG ÁNH SÁNG\nMỐC ${e.power} TỈNH` : combo ? `✦ COMBO!\n${e.player} +${e.power}` : spread ? "≈ ÁNH SÁNG LAN TỎA" : capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
             fontFamily: "Arial Black, sans-serif",
             fontSize: complete || superLight || chest || combo || capture ? "14px" : "12px",
             align: "center",
@@ -471,7 +564,9 @@ export function BattleMap({
             lightPlayer();
           }
         };
-        if (superLight || chest || combo || complete) {
+        if (energy) {
+          this.time.delayedCall(reduced ? 1 : Math.min(1500, Math.max(620, job?.duration ?? 1000)), explode);
+        } else if (superLight || chest || combo || complete) {
           // The old full-height rectangle read as a flat orange slab on a
           // portrait stream. The beacon is now rendered by Golden Awakening;
           // this is only its focused impact core before the burst.

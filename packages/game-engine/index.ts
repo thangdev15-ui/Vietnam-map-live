@@ -8,6 +8,7 @@ import {
   type State,
   type LiveEvent,
   type Player,
+  type Effect,
 } from "../shared/index";
 export class GameEngine {
   state: State;
@@ -168,6 +169,31 @@ export class GameEngine {
     const territory = this.state.territories.find((item) => item.id === provinceId)!;
     this.rememberContributor(territory, player);
     return this.superLight(player, Math.min(100000, power), event.id);
+  }
+  /**
+   * Adds an operator-only visual cue to the existing realtime effect stream.
+   * It intentionally does not mutate a territory, a player score, or any
+   * TikTok accounting. Renderers consume it exactly like a gameplay effect.
+   */
+  triggerVisualEffect(
+    provinceId: string,
+    kind: "meteor" | "lightning" | "vortex" | "starfall",
+    vfx?: Effect["vfx"],
+  ) {
+    if (!this.provinces.some((province) => province.id === provinceId))
+      return "Không tìm thấy tỉnh";
+    this.state.effects.push({
+      id: randomUUID(),
+      province: provinceId,
+      team: "gold",
+      kind,
+      power: 0,
+      player: "VFX TEST LAB",
+      vfx,
+    });
+    this.state.effects = this.state.effects.slice(-30);
+    this.log(`VFX Lab: ${kind} tại ${this.provinces.find((p) => p.id === provinceId)?.name}`);
+    return "vfx";
   }
   player(e: LiveEvent): Player {
     let p = this.state.players.find((p) => p.id === e.userId);

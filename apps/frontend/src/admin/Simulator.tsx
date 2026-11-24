@@ -13,6 +13,7 @@ export function Simulator({
   send,
   burst,
   superLight,
+  triggerVfx,
   busy,
   demoWave,
   demoTotal,
@@ -30,11 +31,16 @@ export function Simulator({
   | "send"
   | "burst"
   | "superLight"
+  | "triggerVfx"
   | "busy"
   | "demoWave"
   | "demoTotal"
 >) {
   const [target, setTarget] = useState("ha-noi");
+  const [vfxColor, setVfxColor] = useState("#ffd34e");
+  const [vfxIntensity, setVfxIntensity] = useState(1);
+  const [vfxDuration, setVfxDuration] = useState(3400);
+  const [vfxDensity, setVfxDensity] = useState(0.8);
   return (
     <section>
       <span className="badge">DEMO • không kết nối TikTok</span>
@@ -105,6 +111,23 @@ export function Simulator({
           ☄ Kích hoạt siêu thắp sáng
         </button>
       </div>
+      <section className="vfx-lab" aria-label="VFX Test Lab">
+        <span className="badge">VFX TEST LAB • chỉ hiệu ứng, không thay điểm hay lãnh thổ</span>
+        <h3>Epic Energy Effects</h3>
+        <div className="form-grid">
+          <label>Màu năng lượng<input type="color" value={vfxColor} onChange={(e) => setVfxColor(e.target.value)} /></label>
+          <label>Cường độ<input type="number" min="0.2" max="1.5" step="0.1" value={vfxIntensity} onChange={(e) => setVfxIntensity(Number(e.target.value))} /></label>
+          <label>Thời lượng (ms)<input type="number" min="600" max="9000" step="100" value={vfxDuration} onChange={(e) => setVfxDuration(Number(e.target.value))} /></label>
+          <label>Mật độ hạt<input type="number" min="0.15" max="1.5" step="0.05" value={vfxDensity} onChange={(e) => setVfxDensity(Number(e.target.value))} /></label>
+        </div>
+        <div className="row">
+          {(["meteor", "lightning", "vortex", "starfall"] as const).map((kind) => (
+            <button key={kind} className="secondary" disabled={Boolean(busy)} onClick={() => triggerVfx(target, kind, { color: vfxColor, intensity: vfxIntensity, duration: vfxDuration, density: vfxDensity })}>
+              Test {kind === "meteor" ? "☄ Meteor" : kind === "lightning" ? "ϟ Lightning" : kind === "vortex" ? "◎ Vortex" : "✦ Starfall"}
+            </button>
+          ))}
+        </div>
+      </section>
     </section>
   );
 }

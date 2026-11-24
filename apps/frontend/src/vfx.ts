@@ -1,20 +1,36 @@
 import type { Effect } from "../../../packages/shared/index";
 
 export type VfxTier = "spark" | "awakening" | "epic" | "legendary";
-export type VfxJob = Effect & { tier: VfxTier; priority: number; duration: number; color: string };
+export type EnergyEffect = "meteor" | "lightning" | "vortex" | "starfall" | null;
+export type VfxJob = Effect & { tier: VfxTier; priority: number; duration: number; color: string; density: number; intensity: number; energy: EnergyEffect };
 
-export const EffectPresets: Record<VfxTier, Pick<VfxJob, "priority" | "duration" | "color">> = {
-  spark: { priority: 1, duration: 1150, color: "#ffd34e" },
-  awakening: { priority: 3, duration: 2500, color: "#ffd34e" },
-  epic: { priority: 6, duration: 3400, color: "#ff9d24" },
-  legendary: { priority: 10, duration: 4800, color: "#fff3a4" },
+export const EffectPresets: Record<VfxTier, Pick<VfxJob, "priority" | "duration" | "color" | "density" | "intensity">> = {
+  spark: { priority: 1, duration: 1150, color: "#ffd34e", density: 0.35, intensity: 0.35 },
+  awakening: { priority: 3, duration: 2500, color: "#ffd34e", density: 0.58, intensity: 0.62 },
+  epic: { priority: 6, duration: 3400, color: "#ff9d24", density: 0.82, intensity: 0.84 },
+  legendary: { priority: 10, duration: 4800, color: "#fff3a4", density: 1, intensity: 1 },
 };
 
 export function presetFor(effect: Effect): VfxJob {
-  const tier: VfxTier = effect.kind === "complete" ? "legendary" :
+  const tier: VfxTier = effect.kind === "starfall" ? "legendary" : effect.kind === "meteor" ? "epic" :
+    effect.kind === "lightning" || effect.kind === "vortex" ? "awakening" : effect.kind === "complete" ? "legendary" :
     effect.kind === "super" || effect.kind === "chest" ? "epic" :
     effect.kind === "capture" || effect.kind === "combo" ? "awakening" : "spark";
-  return { ...effect, tier, ...EffectPresets[tier] };
+  const preset = EffectPresets[tier];
+  const kindEnergy: Record<string, EnergyEffect> = {
+    meteor: "meteor", lightning: "lightning", vortex: "vortex", starfall: "starfall",
+    super: "meteor", capture: "lightning", combo: "vortex", chest: "starfall", complete: "starfall",
+  };
+  return {
+    ...effect,
+    tier,
+    ...preset,
+    color: effect.vfx?.color ?? preset.color,
+    duration: effect.vfx?.duration ?? preset.duration,
+    density: effect.vfx?.density ?? preset.density,
+    intensity: effect.vfx?.intensity ?? preset.intensity,
+    energy: kindEnergy[effect.kind] ?? null,
+  };
 }
 
 /** Bounded, priority-aware event queue shared by both map renderers. */
@@ -61,7 +77,7 @@ export class ParticleManager {
 }
 
 export class LightEffectManager {
-  intensity(job: VfxJob) { return job.tier === "legendary" ? 1 : job.tier === "epic" ? 0.82 : job.tier === "awakening" ? 0.62 : 0.36; }
+  intensity(job: VfxJob) { return job.intensity; }
 }
 export class CameraEffectManager {
   focusScale(job: VfxJob) { return job.tier === "epic" ? 2.15 : job.tier === "awakening" ? 1.82 : 1.48; }

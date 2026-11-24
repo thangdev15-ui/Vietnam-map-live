@@ -10,6 +10,18 @@
 | VFX-04 | Tôn trọng reduced motion, giới hạn effect đồng thời và không đổi state game | `Map.tsx`, `vfx.ts` | Không block Socket/gameplay; animation tự cleanup | COMPLETED |
 | VFX-05 | Build, lint, mô phỏng event và chụp bằng chứng cả Map 1/2 | `docs/verification/vfx-phase1-map1.png`, `docs/verification/vfx-phase1-map2.png` | Build/lint pass; mô phỏng super-light render VFX ở hai map | COMPLETED |
 
+## Epic VFX Engine — Phase 2: Epic Energy & Advanced Particles
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| VFX2-01 | Mở rộng preset/job với màu, intensity, duration, density và route effect gameplay → energy preset | `vfx.ts`, `shared` | Super/capture/combo/chest gọi meteor/lightning/vortex/starfall thật; không đổi điểm | COMPLETED |
+| VFX2-02 | Meteor Strike: quỹ đạo, đuôi lửa, impact, shockwave, phản chiếu ánh sáng | `Map.tsx` | Render độc lập ở Map 1 và Map 2, kết thúc đúng tâm tỉnh | COMPLETED |
+| VFX2-03 | Divine Lightning: sét nhiều nhánh, flash và dư điện | `Map.tsx` | Render độc lập ở hai map, tọa độ đúng tỉnh | COMPLETED |
+| VFX2-04 | Energy Vortex và Starfall có particle chuyển động, trail và core | `Map.tsx`, `style.css` | Render độc lập ở hai map; particle tự hủy/pool | COMPLETED |
+| VFX2-05 | Advanced particle budget/pooling và reduced-motion | `vfx.ts`, `Map.tsx`, `style.css` | Không sinh DOM vô hạn, effect tự cleanup, giữ game loop | COMPLETED |
+| VFX2-06 | VFX Test Lab Admin: test từng effect và cấu hình màu/cường độ/thời lượng/mật độ | `Admin.tsx`, `admin/Simulator.tsx`, `server.ts`, `game-engine` | Button gọi API xác thực, không thay score/territory | COMPLETED |
+| VFX2-07 | Kiểm thử visual cả 4 effect trên Map 1/2; build/lint/test | `docs/verification` | Có ảnh/bằng chứng API và không làm hỏng event gameplay | IN_PROGRESS |
+
 ## Nền tảng và dữ liệu
 
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |

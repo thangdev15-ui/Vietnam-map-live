@@ -105,6 +105,21 @@ describe("Server integration", () => {
     expect(response.ok).toBe(true);
     expect(server!.engine.state.effects.some((effect) => effect.kind === "super")).toBe(true);
   });
+  it("requires admin auth and adds a VFX-only event through the API", async () => {
+    const url = await start();
+    const before = structuredClone(server!.engine.state.territories);
+    expect((await fetch(url + "/api/admin/vfx", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ province: "ha-noi", kind: "meteor" }),
+    })).status).toBe(401);
+    const response = await fetch(url + "/api/admin/vfx", {
+      method: "POST", headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+      body: JSON.stringify({ province: "ha-noi", kind: "meteor", vfx: { color: "#ffcc33", intensity: 1, duration: 3400, density: .8 } }),
+    });
+    expect(response.ok).toBe(true);
+    expect(server!.engine.state.territories).toEqual(before);
+    expect(server!.engine.state.effects.at(-1)).toMatchObject({ province: "ha-noi", kind: "meteor" });
+  });
   it("processes 1000 distinct viewers without event loss", async () => {
     await start();
     server!.engine.start();

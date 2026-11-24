@@ -42,6 +42,7 @@ export type AdminPanelProps = {
   send: (type: LiveEvent["type"]) => Promise<void>;
   burst: () => Promise<void>;
   superLight: (province: string) => Promise<void>;
+  triggerVfx: (province: string, kind: "meteor" | "lightning" | "vortex" | "starfall", vfx: { color?: string; intensity?: number; duration?: number; density?: number }) => Promise<void>;
   startMatch: () => Promise<void>;
   endMatch: () => Promise<void>;
   chooseMap: (map: Settings["map"]) => Promise<void>;

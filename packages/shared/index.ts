@@ -143,6 +143,9 @@ export type Effect = {
   power: number;
   player: string;
   avatar?: string;
+  // Visual-only controls used by the authenticated VFX Test Lab. They never
+  // participate in territory ownership, health, score or gift accounting.
+  vfx?: { color?: string; intensity?: number; duration?: number; density?: number };
 };
 export type VoteCandidate = { id: z.infer<typeof mapSchema>; name: string; keyword: string; description: string; votes: number };
 export type Voting = {

@@ -106,6 +106,11 @@ export function Admin({
     "☄ Siêu thắp sáng đã được kích hoạt.",
     "super-light",
   );
+  const triggerVfx = (province: string, kind: "meteor" | "lightning" | "vortex" | "starfall", vfx: { color?: string; intensity?: number; duration?: number; density?: number }) => run(
+    () => api("vfx", token, { province, kind, vfx }),
+    `✦ Đã kích hoạt ${kind} tại tỉnh đã chọn.`,
+    `vfx-${kind}`,
+  );
   const endMatch = () =>
     run(
       async () => {
@@ -355,6 +360,7 @@ export function Admin({
             send={send}
             burst={burst}
             superLight={superLight}
+            triggerVfx={triggerVfx}
             busy={busy}
             demoWave={demoWave}
             demoTotal={demoTotal}

@@ -217,6 +217,22 @@ export function createApp(token: string, dbPath: string) {
     store.set("state", engine.state);
     r.json({ ok: true });
   });
+  app.post("/api/admin/vfx", (q, r) => {
+    const body = z.object({
+      province: z.string().min(1).max(100),
+      kind: z.enum(["meteor", "lightning", "vortex", "starfall"]),
+      vfx: z.object({
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        intensity: z.number().min(0.2).max(1.5).optional(),
+        duration: z.number().int().min(600).max(9000).optional(),
+        density: z.number().min(0.15).max(1.5).optional(),
+      }).optional(),
+    }).parse(q.body);
+    const result = engine.triggerVisualEffect(body.province, body.kind, body.vfx);
+    if (result !== "vfx") return r.status(404).json({ error: result });
+    store.set("state", engine.state);
+    r.json({ ok: true });
+  });
   app.post("/api/admin/settings", (q, r) => {
     if (engine.state.phase === "running") {
       r.status(409).json({ error: "Kết thúc trận trước khi thay đổi luật" });

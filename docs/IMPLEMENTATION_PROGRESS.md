@@ -13,3 +13,11 @@ Ngày cập nhật: 2026-11-24
 
 1. Kiểm tra broadcast ở 9:16/16:9 với screenshot thực tế.
 2. Bổ sung test migration settings cũ.
+
+## Epic VFX Engine — Phase 2 (đang nghiệm thu)
+
+- Đã nối meteor, lightning, vortex và starfall vào cùng effect stream của gameplay: `super` → meteor, `capture` → lightning, `combo` → vortex, `chest/complete` → starfall.
+- VFX Test Lab ở Admin/Mô phỏng gọi `POST /api/admin/vfx` có xác thực; event này chỉ thêm `effects`, không làm thay đổi điểm, HP hoặc chủ sở hữu tỉnh.
+- Đã sửa Map 2 để dùng chính ID tỉnh từ server event thay vì suy luận từ territory delta. Việc này giữ camera và VFX cùng tọa độ của đúng tỉnh trong SVG transform.
+- Bằng chứng visual hiện có: `docs/verification/phase2-terrain-meteor.png`, `phase2-terrain-lightning.png`, `phase2-terrain-vortex.png`, `phase2-warroom-vortex.png`.
+- Kiểm tra gần nhất bằng Node 24: build, lint và 31 test (game/connector/server) đều qua. Còn cần nghiệm thu bằng mắt đầy đủ chuỗi 4 effect trên cả hai view trước khi đánh dấu VFX2-07 hoàn tất.

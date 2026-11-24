@@ -59,6 +59,16 @@ describe("Game rules", () => {
     expect(g.state.territories[0].owner).toBe("gold");
     expect(g.state.effects.some((effect) => effect.kind === "super")).toBe(true);
   });
+  it("emits a visual-only VFX event without mutating match progress", () => {
+    const g = game();
+    const before = structuredClone(g.state.territories);
+    const score = g.state.players.reduce((total, player) => total + player.score, 0);
+    expect(g.triggerVisualEffect("ha-noi", "meteor", { color: "#ffcc33", intensity: 1.2, duration: 3600, density: .7 })).toBe("vfx");
+    expect(g.state.territories).toEqual(before);
+    expect(g.state.players.reduce((total, player) => total + player.score, 0)).toBe(score);
+    expect(g.state.effects.at(-1)).toMatchObject({ province: "ha-noi", kind: "meteor", vfx: { color: "#ffcc33" } });
+    expect(g.triggerVisualEffect("khong-co", "lightning")).toBe("Không tìm thấy tỉnh");
+  });
   it("awards combo bonuses at the configured threshold and expires them", () => {
     const settings = structuredClone(defaults);
     settings.comboThreshold = 3;
