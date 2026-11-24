@@ -61,6 +61,14 @@ export function Rules({
           ))}
         </span>
       </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={settings.lightSpread}
+          onChange={(e) => setSettings({ ...settings, lightSpread: e.target.checked })}
+        />
+        Hiệu ứng ánh sáng lan tỏa sang các vùng lân cận khi một tỉnh được thắp sáng
+      </label>
       <h2>Các phe</h2>
       {settings.teams.map((t, i) => (
         <div className="row" key={t.id}>

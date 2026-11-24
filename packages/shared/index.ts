@@ -59,6 +59,7 @@ export const settingsSchema = z
     comboWindow: z.number().int().min(2).max(60).default(10),
     comboThreshold: z.number().int().min(2).max(20).default(3),
     comboBonus: z.number().int().min(0).max(100000).default(10),
+    lightSpread: z.boolean().default(true),
   })
   .superRefine((s, c) => {
     if (
@@ -95,6 +96,7 @@ export const defaults: Settings = {
   comboWindow: 10,
   comboThreshold: 3,
   comboBonus: 10,
+  lightSpread: true,
 };
 export const eventSchema = z.object({
   id: z.string().min(1).max(200),

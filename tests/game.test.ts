@@ -74,6 +74,12 @@ describe("Game rules", () => {
     g.tick();
     expect(g.state.players[0].combo).toBe(0);
   });
+  it("uses light spread only as a visual event and never claims nearby provinces", () => {
+    const g = game();
+    for (let i = 0; i < 4; i++) g.apply({ ...event("hà nội"), id: `light-${i}` });
+    expect(g.state.effects.filter((effect) => effect.kind === "spread")).toHaveLength(1);
+    expect(g.state.territories[1].owner).toBeNull();
+  });
   it("captures province only after defense exhausted", () => {
     const g = game();
     g.apply(event("đỏ"));

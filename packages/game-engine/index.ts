@@ -390,7 +390,10 @@ export class GameEngine {
     if (comboBonus)
       this.state.effects.push({ id: randomUUID(), province: t.id, team: p.team!, kind: "combo", power: comboBonus, player: p.name, avatar: p.avatar });
     this.state.effects = this.state.effects.slice(-30);
-    if (captured) this.unlockChest(t.id, p.name);
+    if (captured) {
+      this.addLightSpread(t.id, p);
+      this.unlockChest(t.id, p.name);
+    }
     if (
       (this.state.territories.filter((t) => t.owner === p.team).length /
         this.state.territories.length) *
@@ -419,6 +422,25 @@ export class GameEngine {
     this.state.effects.push({ id: randomUUID(), province: provinceId, team: "gold", kind: "chest", power: milestone, player });
     this.state.effects = this.state.effects.slice(-30);
     this.log(`Rương ánh sáng mốc ${milestone} tỉnh đã mở`);
+  }
+  private addLightSpread(provinceId: string, player: Player) {
+    if (!this.state.settings.lightSpread) return;
+    const source = this.provinces.find((province) => province.id === provinceId);
+    if (!source) return;
+    const nearby = this.provinces
+      .filter((province) => province.id !== provinceId)
+      .map((province) => ({
+        province,
+        distance: Math.hypot(province.center[0] - source.center[0], province.center[1] - source.center[1]),
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+    for (const { province } of nearby)
+      this.state.effects.push({
+        id: randomUUID(), province: province.id, team: player.team!, kind: "spread", power: 0,
+        player: player.name, avatar: player.avatar,
+      });
+    if (nearby.length) this.log(`Ánh sáng lan tỏa từ ${source.name}`);
   }
   private superLight(player: Player, power: number, id: string) {
     const territory = this.state.territories.find((item) => item.id === player.target);
