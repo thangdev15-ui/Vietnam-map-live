@@ -1,8 +1,0 @@
-{
-  "source": "Natural Earth 1:50m Admin 0 Countries",
-  "license": "Public domain",
-  "sourceFile": "sources/natural-earth-50m-countries.geojson",
-  "generatedAt": "2026-11-24T01:09:52.709Z",
-  "southeastAsiaCountries": 11,
-  "worldCountries": 242
-}

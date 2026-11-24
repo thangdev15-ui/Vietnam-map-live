@@ -695,14 +695,14 @@ label select {
   mask-image: linear-gradient(#000, transparent 82%);
   z-index: -1;
 }
-.portrait-live.theme-southeast-asia { --gold:#55f7e0; --gold-hot:#a6fff3; background:radial-gradient(ellipse at 50% 40%,#064d667d,transparent 54%),linear-gradient(155deg,#020d22,#061e3d 64%,#010914); }
-.portrait-live.theme-southeast-asia::before { background-image:linear-gradient(#31e9fd18 1px,transparent 1px),linear-gradient(90deg,#31e9fd18 1px,transparent 1px); background-size:31px 31px; }
-.portrait-live.theme-southeast-asia .portrait-card,.portrait-live.theme-southeast-asia .portrait-province-chip { border-color:#31e9fd9c; background:linear-gradient(135deg,#041c3cf1,#021326e9); }
-.portrait-live.theme-southeast-asia .portrait-cta { border-color:#2ee8d1; background:linear-gradient(90deg,#043b58ed,#09606fed,#043b58ed); }
-.portrait-live.theme-world { --gold:#ffad39; --gold-hot:#ffd182; background:radial-gradient(ellipse at 50% 40%,#71300c64,transparent 58%),linear-gradient(155deg,#140a0c,#261316 65%,#090609); }
-.portrait-live.theme-world::before { background-image:radial-gradient(#ffb55b64 1px,transparent 1.5px); }
-.portrait-live.theme-world .portrait-card,.portrait-live.theme-world .portrait-province-chip { border-color:#c764398d; background:linear-gradient(135deg,#28110ff2,#12080be9); }
-.portrait-live.theme-world .portrait-cta { border-color:#d26827; background:linear-gradient(90deg,#56200ced,#92390df2,#56200ced); }
+.portrait-live.theme-cyber-grid { --gold:#55f7e0; --gold-hot:#a6fff3; background:radial-gradient(ellipse at 50% 40%,#064d667d,transparent 54%),linear-gradient(155deg,#020d22,#061e3d 64%,#010914); }
+.portrait-live.theme-cyber-grid::before { background-image:linear-gradient(#31e9fd18 1px,transparent 1px),linear-gradient(90deg,#31e9fd18 1px,transparent 1px); background-size:31px 31px; }
+.portrait-live.theme-cyber-grid .portrait-card,.portrait-live.theme-cyber-grid .portrait-province-chip { border-color:#31e9fd9c; background:linear-gradient(135deg,#041c3cf1,#021326e9); }
+.portrait-live.theme-cyber-grid .portrait-cta { border-color:#2ee8d1; background:linear-gradient(90deg,#043b58ed,#09606fed,#043b58ed); }
+.portrait-live.theme-imperial-atlas { --gold:#ffad39; --gold-hot:#ffd182; background:radial-gradient(ellipse at 50% 40%,#71300c64,transparent 58%),linear-gradient(155deg,#140a0c,#261316 65%,#090609); }
+.portrait-live.theme-imperial-atlas::before { background-image:radial-gradient(#ffb55b64 1px,transparent 1.5px); }
+.portrait-live.theme-imperial-atlas .portrait-card,.portrait-live.theme-imperial-atlas .portrait-province-chip { border-color:#c764398d; background:linear-gradient(135deg,#28110ff2,#12080be9); }
+.portrait-live.theme-imperial-atlas .portrait-cta { border-color:#d26827; background:linear-gradient(90deg,#56200ced,#92390df2,#56200ced); }
 .portrait-header {
   min-height: 9.6vh;
   display: grid;

@@ -67,14 +67,14 @@ function PortraitBroadcast({
     }));
   const featured = latestEffect
     ? `${latestEffect.player} vừa ${latestEffect.kind === "capture" ? "thắp sáng" : latestEffect.kind === "heal" ? "tiếp năng lượng cho" : "gửi ánh sáng tới"} ${latestProvinceName ?? "một vùng"}`
-    : state.feed[0] ?? "Bình luận tên khu vực để thắp sáng bản đồ";
+    : state.feed[0] ?? "Bình luận tên tỉnh, thành để thắp sáng bản đồ";
   return (
     <main className={`portrait-live theme-${state.settings.map}`} aria-label="Màn hình phát TikTok dọc">
       <header className="portrait-header">
         <div className="portrait-live-badge"><i /> LIVE</div>
         <div className="portrait-title">
           <span>VIỆT NAM ĐẠI CHIẾN</span>
-          <strong>THẮP SÁNG BẢN ĐỒ LIVE</strong>
+          <strong>THẮP SÁNG BẢN ĐỒ VIỆT NAM</strong>
         </div>
         <div className="portrait-clock">
           {state.phase === "running"
@@ -91,7 +91,7 @@ function PortraitBroadcast({
       </header>
 
       <section className="portrait-progress">
-        <div><span>ĐÃ THẮP SÁNG</span><b>{claimed}/{provinces.length} KHU VỰC</b></div>
+        <div><span>ĐÃ THẮP SÁNG</span><b>{claimed}/{provinces.length} TỈNH, THÀNH</b></div>
         <div className="portrait-track"><i style={{ width: `${(claimed / provinces.length) * 100}%` }} /></div>
       </section>
 
@@ -143,7 +143,7 @@ function PortraitBroadcast({
         {state.phase === "ended" && mapCompleted && (
           <section className="portrait-completion" aria-live="assertive">
             <span>✦ TOÀN BẢN ĐỒ BỪNG SÁNG ✦</span>
-            <strong>BẢN ĐỒ ĐÃ ĐƯỢC THẮP SÁNG</strong>
+            <strong>VIỆT NAM ĐÃ ĐƯỢC THẮP SÁNG</strong>
             <div>
               {state.players.slice(0, 3).map((player, index) => (
                 <p key={player.name}><b>#{index + 1}</b><i>{player.name}</i><em>{player.score}</em></p>

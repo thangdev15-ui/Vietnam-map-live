@@ -10,7 +10,7 @@ export function Rules({
       <h2>Thông số trận tiếp theo</h2>
       <div className="form-grid">
         <label>
-          Bản đồ chiến trường mặc định
+          Giao diện chiến trường mặc định
           <select
             value={settings.map}
             onChange={(e) =>
@@ -20,16 +20,9 @@ export function Rules({
               })
             }
           >
-            <option value="vietnam">Việt Nam • 63 tỉnh, thành</option>
-            <option value="southeast-asia">Đông Nam Á • 11 quốc gia</option>
-            <option value="world">Thế giới • 242 quốc gia/vùng</option>
-          </select>
-        </label>
-        <label>
-          Dữ liệu Việt Nam
-          <select value={settings.vietnamVariant} onChange={(e) => setSettings({ ...settings, vietnamVariant: e.target.value as Settings["vietnamVariant"] })}>
-            <option value="historical63">63 tỉnh, thành lịch sử</option>
-            <option value="merged34">34 tỉnh, thành hiện hành</option>
+            <option value="war-room">War Room • ánh vàng</option>
+            <option value="cyber-grid">Cyber Network • cyan</option>
+            <option value="imperial-atlas">Imperial Atlas • hắc kim</option>
           </select>
         </label>
         {(
@@ -49,9 +42,9 @@ export function Rules({
         ).map(([k, l]) => numeric(k, l))}
       </div>
       <label className="map-options">
-        Bản đồ cho phép bình chọn
+        Giao diện chiến trường cho phép bình chọn
         <span>
-          {(["vietnam", "southeast-asia", "world"] as const).map((map) => (
+          {(["war-room", "cyber-grid", "imperial-atlas"] as const).map((map) => (
             <button
               type="button"
               className={settings.activeMaps.includes(map) ? "selected" : "secondary"}
@@ -63,7 +56,7 @@ export function Rules({
                 if (activeMaps.length) setSettings({ ...settings, activeMaps });
               }}
             >
-              {map === "vietnam" ? "MAP 1 · Việt Nam" : map === "southeast-asia" ? "MAP 2 · Đông Nam Á" : "MAP 3 · Thế giới"}
+              {map === "war-room" ? "MAP 1 · War Room" : map === "cyber-grid" ? "MAP 2 · Cyber Network" : "MAP 3 · Imperial Atlas"}
             </button>
           ))}
         </span>

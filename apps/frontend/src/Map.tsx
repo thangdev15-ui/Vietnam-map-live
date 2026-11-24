@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import Phaser from "phaser";
 import type { Province, State } from "../../../packages/shared/index";
+const project = ([x, y]: number[]) => ({
+  x: (x - 101.5) * 62 + 50,
+  y: (24 - y) * 49 + 20,
+});
 export function BattleMap({
   provinces,
   state,
@@ -17,21 +21,6 @@ export function BattleMap({
   latest.current = state;
   selected.current = onSelect;
   useEffect(() => {
-    // Fit the actual GeoJSON extent. Vietnam, Southeast Asia and the World do
-    // not share a projection, bounds, or geometry.
-    const points = provinces.flatMap((province) => province.polygons.flatMap((polygon) => polygon.flatMap((ring) => ring)));
-    const minX = Math.min(...points.map(([x]) => x));
-    const maxX = Math.max(...points.map(([x]) => x));
-    const minY = Math.min(...points.map(([, y]) => y));
-    const maxY = Math.max(...points.map(([, y]) => y));
-    const width = 900;
-    const height = 820;
-    const pad = 34;
-    const scale = Math.min((width - pad * 2) / (maxX - minX || 1), (height - pad * 2) / (maxY - minY || 1));
-    const offsetX = (width - (maxX - minX) * scale) / 2;
-    const offsetY = (height - (maxY - minY) * scale) / 2;
-    const project = ([x, y]: number[]) => ({ x: offsetX + (x - minX) * scale, y: height - offsetY - (y - minY) * scale });
-    const home = { x: width / 2, y: height / 2 };
     const seen = new Set<string>();
     let graphics: Phaser.GameObjects.Graphics;
     let markers: Phaser.GameObjects.Container;
@@ -49,8 +38,8 @@ export function BattleMap({
         markers = this.add.container();
         const stars = this.add.graphics();
         for (let i = 0; i < 65; i++) {
-          const x = Phaser.Math.Between(8, width - 8);
-          const y = Phaser.Math.Between(8, height - 8);
+          const x = Phaser.Math.Between(8, 692);
+          const y = Phaser.Math.Between(8, 812);
           const dot = this.add.circle(x, y, Phaser.Math.FloatBetween(0.35, 1.2), 0xb9dcff, Phaser.Math.FloatBetween(0.12, 0.55));
           this.tweens.add({ targets: dot, alpha: 0.08, y: y - Phaser.Math.Between(6, 18), duration: Phaser.Math.Between(1600, 3400), yoyo: true, repeat: -1, delay: i * 45 });
         }
@@ -68,7 +57,7 @@ export function BattleMap({
             camera.zoomTo(1.1, 1400, "Sine.easeInOut");
             tourReset = this.time.delayedCall(2350, () => {
               if (active) return;
-              camera.pan(home.x, home.y, 1450, "Sine.easeInOut");
+              camera.pan(350, 410, 1450, "Sine.easeInOut");
               camera.zoomTo(1, 1450, "Sine.easeInOut");
             });
           },
@@ -151,7 +140,7 @@ export function BattleMap({
         camera.pan(position.x, position.y, superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
         camera.zoomTo(superLight ? 2.55 : combo ? 1.8 : capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
         cameraReset = this.time.delayedCall(superLight ? 3500 : combo ? 1800 : capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
-          camera.pan(home.x, home.y, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
+          camera.pan(350, 410, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
           camera.zoomTo(1, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
         });
       }
@@ -248,7 +237,7 @@ export function BattleMap({
           if (capture || lighting) {
             // Mỗi comment thả một ngọn đèn; đèn cuối cùng mở cảnh thắp sáng cận cảnh.
             const lantern = this.add.container(
-              Phaser.Math.Clamp(position.x + Phaser.Math.Between(-125, 125), 24, width - 24),
+              Phaser.Math.Clamp(position.x + Phaser.Math.Between(-125, 125), 24, 676),
               -26,
             );
             const glow = this.add.circle(0, 0, 19, 0xffb72e, 0.17);
@@ -280,9 +269,9 @@ export function BattleMap({
             const lit = Boolean(t?.owner);
             const progress = Phaser.Math.Clamp(1 - (t?.hp ?? s.settings.hp) / s.settings.hp, 0, 1);
             // Unlit provinces brighten gradually with each viewer comment.
-            const palette = s.settings.map === "southeast-asia"
+            const palette = s.settings.map === "cyber-grid"
               ? { unlit: 0x071d35, warm: 0x08cfe9, lit: 0x30f5dc, line: 0x2f9aba, bright: 0xc8ffff }
-              : s.settings.map === "world"
+              : s.settings.map === "imperial-atlas"
                 ? { unlit: 0x211920, warm: 0xd14c20, lit: 0xffb326, line: 0x8a4035, bright: 0xffe4a3 }
                 : { unlit: 0x10294a, warm: 0xe6a51f, lit: 0xffc83d, line: 0x4e7196, bright: 0xfff5a8 };
             const unlit = Phaser.Display.Color.IntegerToColor(palette.unlit);
@@ -328,8 +317,8 @@ export function BattleMap({
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: host.current!,
-      width,
-      height,
+      width: 700,
+      height: 820,
       transparent: true,
       scene: MapScene,
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
@@ -346,7 +335,7 @@ export function BattleMap({
       ref={host}
       className="map-canvas"
       role="img"
-      aria-label="Bản đồ tương tác. Chọn khu vực bằng bản đồ hoặc danh sách bên cạnh."
+      aria-label="Bản đồ lãnh thổ Việt Nam. Chọn tỉnh bằng bản đồ hoặc danh sách bên cạnh."
     />
   );
 }

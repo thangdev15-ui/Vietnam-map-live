@@ -159,11 +159,11 @@ describe("Game rules", () => {
     expect(g.apply({ ...event("1"), userId: "viewer-a" })).toBe("vote");
     expect(g.apply({ ...event("2"), userId: "viewer-a" })).toBe("Đã bình chọn");
     expect(g.apply({ ...event("không hợp lệ"), userId: "viewer-b" })).toBe("Bình luận không phải lựa chọn bản đồ");
-    expect(g.apply({ ...event("việt nam"), userId: "viewer-b" })).toBe("vote");
+    expect(g.apply({ ...event("war room"), userId: "viewer-b" })).toBe("vote");
     g.tick(30_000);
     expect(g.state.phase).toBe("vote_result");
-    expect(g.state.voting?.winner).toBe("vietnam");
-    expect(g.tick(32_500)).toBe("vietnam");
+    expect(g.state.voting?.winner).toBe("war-room");
+    expect(g.tick(32_500)).toBe("war-room");
   });
   it("does not randomly resolve a tied or empty map vote", () => {
     const tied = new GameEngine(map, structuredClone(defaults));
@@ -172,7 +172,7 @@ describe("Game rules", () => {
     tied.apply({ ...event("2"), userId: "viewer-b" });
     tied.tick(30_000);
     expect(tied.state.phase).toBe("voting_tie");
-    expect(tied.chooseMap("southeast-asia", 30_000)).toBe("vote_result");
+    expect(tied.chooseMap("cyber-grid", 30_000)).toBe("vote_result");
 
     const empty = new GameEngine(map, structuredClone(defaults));
     empty.beginVoting(0);

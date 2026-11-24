@@ -122,20 +122,4 @@ describe("Server integration", () => {
       map.every((p: { polygons: unknown[] }) => p.polygons.length > 0),
     ).toBe(true);
   });
-  it("loads a separate geographic dataset and resets lighting when the voted map changes", async () => {
-    const url = await start();
-    server!.engine.start();
-    server!.engine.triggerSuperLight("ha-noi", 100);
-    expect(server!.engine.state.territories.some((territory) => territory.owner)).toBe(true);
-    server!.activateMap("southeast-asia");
-    const southeastAsia = await (await fetch(url + "/api/map")).json() as { id: string; name: string }[];
-    expect(southeastAsia).toHaveLength(11);
-    expect(southeastAsia.some((region) => region.name === "Thái Lan")).toBe(true);
-    expect(server!.engine.state.territories.every((territory) => !territory.owner)).toBe(true);
-    server!.engine.finish();
-    server!.activateMap("world");
-    const world = await (await fetch(url + "/api/map")).json() as { id: string }[];
-    expect(world.length).toBeGreaterThan(150);
-    expect(world.some((region) => region.id === "country-vnm")).toBe(true);
-  });
 });
