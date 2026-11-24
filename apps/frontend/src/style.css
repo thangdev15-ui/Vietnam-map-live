@@ -279,6 +279,8 @@ footer {
   max-height: 100%;
 }
 .terrain-lit-pulse { animation: terrainLitPulse 2.8s ease-in-out infinite; }
+.terrain-province image,
+.terrain-province rect { transition: opacity 720ms cubic-bezier(.2,.8,.2,1); }
 @keyframes terrainLitPulse { 50% { opacity: .28; } }
 .sea-label {
   position: absolute;

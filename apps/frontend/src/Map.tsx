@@ -44,18 +44,21 @@ function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: S
       </defs>
       <g clipPath={`url(#${prefix}-all)`}>
         <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" />
-        <rect width="700" height="820" fill="#020915" opacity="0.62" />
+        {/* The dormant map is deliberately dark. Light is revealed only by
+            the exact polygon of the province receiving game progress. */}
+        <rect width="700" height="820" fill="#010613" opacity="0.83" />
       </g>
       {provinces.map((province) => {
         const territory = territoryById.get(province.id);
         const progress = Phaser.Math.Clamp(1 - (territory?.hp ?? state.settings.hp) / state.settings.hp, 0, 1);
         const lit = Boolean(territory?.owner);
         if (!lit && progress <= 0) return null;
+        const brightness = lit ? 1 : 0.18 + progress * 0.82;
         return (
-          <g key={province.id} clipPath={`url(#${prefix}-${province.id})`}>
-            <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" opacity={lit ? 1 : 0.4 + progress * 0.45} />
-            <rect width="700" height="820" fill={lit ? "#ffc72e" : "#f0a628"} opacity={lit ? 0.34 : progress * 0.11} />
-            {lit && <rect width="700" height="820" fill="#fff3a2" opacity="0.1" className="terrain-lit-pulse" />}
+          <g key={province.id} clipPath={`url(#${prefix}-${province.id})`} className={lit ? "terrain-province terrain-province-lit" : "terrain-province"}>
+            <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" opacity={brightness} />
+            <rect width="700" height="820" fill={lit ? "#ffd33d" : "#f0a628"} opacity={lit ? 0.3 : progress * 0.18} />
+            {lit && <rect width="700" height="820" fill="#fff3a2" opacity="0.12" className="terrain-lit-pulse" />}
           </g>
         );
       })}
@@ -365,6 +368,11 @@ export function BattleMap({
         for (const e of s.effects) {
           if (seen.has(e.id)) continue;
           seen.add(e.id);
+          // Map 2 uses SVG clipping for both the dark and lit image. Canvas
+          // effects have a different responsive transform, so do not render
+          // a second, offset animation over the province. Its light change
+          // above is the event feedback for this view.
+          if (s.settings.map === "cyber-grid") continue;
           if (active >= 16) continue;
           this.showEffect(e, s);
         }
