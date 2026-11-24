@@ -13,6 +13,11 @@ export const teamSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   keyword: z.string().min(1).max(40),
 });
+export const mapSchema = z.enum(["historical63", "merged34"]);
+export const mapCatalog = {
+  historical63: { id: "historical63", name: "VIỆT NAM 63", keyword: "1", description: "63 tỉnh, thành lịch sử" },
+  merged34: { id: "merged34", name: "VIỆT NAM 34", keyword: "2", description: "34 tỉnh, thành hiện tại" },
+} as const;
 export const settingsSchema = z
   .object({
     teams: z.array(teamSchema).min(2).max(6),
@@ -45,7 +50,9 @@ export const settingsSchema = z
         }),
       )
       .max(200),
-    map: z.enum(["historical63", "merged34"]),
+    map: mapSchema,
+    activeMaps: z.array(mapSchema).min(1).max(2).default(["historical63", "merged34"]),
+    votingDuration: z.number().int().min(10).max(120).default(30),
   })
   .superRefine((s, c) => {
     if (
@@ -77,6 +84,8 @@ export const defaults: Settings = {
     { id: "rose", name: "Rose", skill: "attack", power: 40, enabled: true },
   ],
   map: "historical63",
+  activeMaps: ["historical63", "merged34"],
+  votingDuration: 30,
 };
 export const eventSchema = z.object({
   id: z.string().min(1).max(200),
@@ -123,10 +132,19 @@ export type Effect = {
   player: string;
   avatar?: string;
 };
+export type VoteCandidate = { id: z.infer<typeof mapSchema>; name: string; keyword: string; description: string; votes: number };
+export type Voting = {
+  endsAt: number;
+  resultEndsAt?: number;
+  candidates: VoteCandidate[];
+  voterIds: string[];
+  winner?: z.infer<typeof mapSchema>;
+};
 export type State = {
   matchId: string;
-  phase: "waiting" | "running" | "ended";
+  phase: "waiting" | "voting" | "vote_result" | "voting_tie" | "vote_empty" | "running" | "paused" | "ended";
   endsAt: number;
+  pausedRemaining?: number;
   winner: string | null;
   settings: Settings;
   territories: Territory[];
@@ -134,4 +152,5 @@ export type State = {
   feed: string[];
   effects: Effect[];
   processed: number;
+  voting?: Voting;
 };

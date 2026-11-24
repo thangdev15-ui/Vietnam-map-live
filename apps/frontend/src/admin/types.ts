@@ -43,6 +43,10 @@ export type AdminPanelProps = {
   burst: () => Promise<void>;
   startMatch: () => Promise<void>;
   endMatch: () => Promise<void>;
+  chooseMap: (map: Settings["map"]) => Promise<void>;
+  closeVote: () => Promise<void>;
+  pauseMatch: () => Promise<void>;
+  resumeMatch: () => Promise<void>;
   busy: string;
   demoWave: number;
   demoTotal: number;

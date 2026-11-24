@@ -541,6 +541,13 @@ footer {
   transform: translateY(-2px);
   box-shadow: 0 8px 26px #7896ad38;
 }
+.map-admin-choice { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid #294454; }
+.map-admin-choice > b { width:100%; color:#ffd96a; font-size:13px; }
+.map-admin-choice button { margin:0; }
+.map-options { margin:-4px 0 26px; }
+.map-options > span { display:flex; gap:8px; margin-top:9px; flex-wrap:wrap; }
+.map-options button { margin:0; font-size:12px; }
+.map-options button.selected { background:#63dcbc; color:#08231f; box-shadow:0 0 18px #63dfbd35; }
 button:disabled { cursor: wait; opacity: .72; }
 .admin-toast {
   position: fixed;
@@ -735,6 +742,27 @@ label select {
 .portrait-province-chip b { font-size:clamp(9px,1.2vw,15px); }
 .portrait-province-chip small { color:#bed1ef; font-size:clamp(7px,.9vw,11px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .portrait-side-panel { position:absolute; z-index:3; top:4%; right:3%; width:30%; display:grid; gap:8px; }
+.map-vote-overlay { position:absolute; z-index:7; left:50%; top:47%; width:min(68%,620px); padding:clamp(12px,2vw,24px); border:1px solid #ffe277; border-radius:15px; text-align:center; background:linear-gradient(145deg,#07174df2,#122b70ee 58%,#08123bf2); box-shadow:0 0 0 5px #ffe15b26,0 20px 70px #000c,inset 0 0 38px #568aff3d; transform:translate(-50%,-50%); animation:voteReveal .55s cubic-bezier(.16,.87,.31,1.2); }
+.vote-kicker { color:#89baff; font-size:clamp(7px,.85vw,11px); font-weight:900; letter-spacing:.16em; }
+.map-vote-overlay > strong { display:block; margin-top:3px; color:#fff5b2; font-size:clamp(16px,2.4vw,30px); letter-spacing:-.04em; }
+.map-vote-overlay > p { margin:5px 0 8px; color:#c6d8ff; font-size:clamp(7px,.9vw,11px); font-weight:700; }
+.vote-countdown { display:inline-flex; align-items:center; gap:5px; margin-bottom:10px; color:#fff1a3; font-size:clamp(17px,2.5vw,30px); font-weight:900; font-variant-numeric:tabular-nums; }
+.vote-countdown i { width:7px; height:7px; border-radius:50%; background:#ffda49; box-shadow:0 0 12px #ffe45d; animation:livePulse 1s infinite; }
+.vote-countdown small { color:#b8cdf7; font-size:clamp(7px,.75vw,10px); letter-spacing:.1em; }
+.vote-candidates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.vote-candidate { position:relative; display:grid; grid-template-columns:auto 1fr auto; gap:1px 6px; padding:8px; overflow:hidden; border:1px solid #7599db8a; border-radius:8px; text-align:left; background:#06133ad9; }
+.vote-candidate > span { grid-row:span 2; align-self:center; color:#071334; padding:3px 4px; border-radius:4px; background:#ffe36c; font-size:clamp(7px,.8vw,10px); font-weight:900; }
+.vote-candidate b { color:#f4f8ff; font-size:clamp(10px,1.15vw,14px); }
+.vote-candidate small { color:#acc4ec; font-size:clamp(6px,.75vw,9px); }
+.vote-candidate div { grid-column:1/-1; height:4px; margin-top:5px; overflow:hidden; border-radius:9px; background:#314879; }
+.vote-candidate div i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#70e9d0,#ffe364); box-shadow:0 0 9px #82e7e0; transition:width .35s ease; }
+.vote-candidate > strong { position:absolute; right:8px; bottom:7px; color:#6fead1; font-size:clamp(7px,.8vw,10px); }
+.map-vote-result { position:absolute; z-index:7; left:50%; top:47%; display:grid; gap:4px; width:min(60%,510px); padding:20px; border:1px solid #ffe170; border-radius:14px; text-align:center; background:radial-gradient(circle at top,#624305f1,#211300f3 70%); box-shadow:0 0 0 6px #ffdb5930,0 20px 60px #000d; transform:translate(-50%,-50%); animation:voteReveal .45s cubic-bezier(.16,.87,.31,1.2); }
+.map-vote-result span { color:#ffe175; font-size:clamp(7px,.85vw,11px); font-weight:900; letter-spacing:.12em; }
+.map-vote-result strong { color:#fff8d1; font-size:clamp(15px,2.2vw,27px); }
+.map-vote-result small { color:#eadba5; font-size:clamp(7px,.85vw,10px); }
+.map-vote-result.unresolved { border-color:#a7c4ff; background:radial-gradient(circle at top,#173d80f3,#081536f5 70%); }
+@keyframes voteReveal { from { opacity:0; transform:translate(-50%,-43%) scale(.84); filter:blur(4px); } to { opacity:1; transform:translate(-50%,-50%) scale(1); filter:blur(0); } }
 .portrait-card { padding:8px; border:1px solid #ca9d3e80; border-radius:8px; background:linear-gradient(135deg,#091750f2,#030a2cea); box-shadow:0 7px 18px #0009; }
 .portrait-card small { display:block; color:var(--gold); font-weight:900; font-size:clamp(7px,.9vw,11px); line-height:1.25; }
 .conqueror-card p { margin:5px 0 0; color:#fff8d4; font-weight:800; font-size:clamp(8px,1.05vw,13px); line-height:1.32; }

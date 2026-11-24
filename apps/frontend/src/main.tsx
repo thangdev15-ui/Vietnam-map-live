@@ -24,6 +24,7 @@ function PortraitBroadcast({
   const announced = useRef<string | undefined>(undefined);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
+  const voteSeconds = Math.max(0, Math.ceil(((state.voting?.endsAt ?? Date.now()) - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
   const leader = state.players[0];
   const latestEffect = state.effects.at(-1);
@@ -79,7 +80,7 @@ function PortraitBroadcast({
         <div className="portrait-audio">
           <button onClick={enableAudio} className={audioEnabled ? "active" : ""}>
             {audioEnabled
-              ? "♫ GIỌNG FPT.AI"
+              ? "♫ ÂM THANH ĐÃ BẬT"
               : "🔈 BẬT ÂM"}
           </button>
         </div>
@@ -93,6 +94,41 @@ function PortraitBroadcast({
       <section className="portrait-arena">
         <div className="portrait-map-glow" />
         <BattleMap provinces={provinces} state={state} onSelect={setSelected} />
+        {state.phase === "voting" && state.voting && (
+          <section className="map-vote-overlay" aria-live="polite">
+            <div className="vote-kicker">BÌNH CHỌN CHIẾN TRƯỜNG</div>
+            <strong>CHỌN BẢN ĐỒ LIVE</strong>
+            <p>COMMENT SỐ BẢN ĐỒ · MỖI TÀI KHOẢN 1 PHIẾU</p>
+            <div className="vote-countdown"><i /> {voteSeconds}<small>GIÂY</small></div>
+            <div className="vote-candidates">
+              {state.voting.candidates.map((candidate) => {
+                const total = state.voting!.candidates.reduce((sum, item) => sum + item.votes, 0);
+                const percent = total ? (candidate.votes / total) * 100 : 0;
+                return <article className="vote-candidate" key={candidate.id}>
+                  <span>MAP {candidate.keyword}</span>
+                  <b>{candidate.name}</b>
+                  <small>{candidate.description}</small>
+                  <div><i style={{ width: `${percent}%` }} /></div>
+                  <strong>{candidate.votes} PHIẾU</strong>
+                </article>;
+              })}
+            </div>
+          </section>
+        )}
+        {state.phase === "vote_result" && state.voting?.winner && (
+          <section className="map-vote-result" aria-live="polite">
+            <span>✦ CHIẾN TRƯỜNG ĐƯỢC CHỌN</span>
+            <strong>{state.voting.candidates.find((candidate) => candidate.id === state.voting?.winner)?.name}</strong>
+            <small>Đang thắp sáng bản đồ…</small>
+          </section>
+        )}
+        {(state.phase === "voting_tie" || state.phase === "vote_empty") && (
+          <section className="map-vote-result unresolved" aria-live="polite">
+            <span>{state.phase === "voting_tie" ? "BÌNH CHỌN HÒA" : "CHƯA CÓ PHIẾU"}</span>
+            <strong>ĐANG CHỜ QUẢN TRỊ VIÊN CHỌN BẢN ĐỒ</strong>
+            <small>Không tự chọn ngẫu nhiên.</small>
+          </section>
+        )}
         <div className="portrait-province-chip">
           <span style={{ background: selectedTeam?.color ?? "#7f9aa7" }} />
           <b>{selectedProvince.name}</b>

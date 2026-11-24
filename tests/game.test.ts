@@ -110,6 +110,40 @@ describe("Game rules", () => {
     expect(g.state.winner).toBeNull();
     expect(g.apply(event("đỏ"))).toBe("Trận chưa chạy");
   });
+  it("opens a map vote, accepts one valid vote per viewer and resolves a winner", () => {
+    const g = new GameEngine(map, structuredClone(defaults));
+    expect(g.beginVoting(0)).toBe("voting");
+    expect(g.apply({ ...event("1"), userId: "viewer-a" })).toBe("vote");
+    expect(g.apply({ ...event("2"), userId: "viewer-a" })).toBe("Đã bình chọn");
+    expect(g.apply({ ...event("không hợp lệ"), userId: "viewer-b" })).toBe("Bình luận không phải lựa chọn bản đồ");
+    expect(g.apply({ ...event("historical63"), userId: "viewer-b" })).toBe("vote");
+    g.tick(30_000);
+    expect(g.state.phase).toBe("vote_result");
+    expect(g.state.voting?.winner).toBe("historical63");
+    expect(g.tick(32_500)).toBe("historical63");
+  });
+  it("does not randomly resolve a tied or empty map vote", () => {
+    const tied = new GameEngine(map, structuredClone(defaults));
+    tied.beginVoting(0);
+    tied.apply({ ...event("1"), userId: "viewer-a" });
+    tied.apply({ ...event("2"), userId: "viewer-b" });
+    tied.tick(30_000);
+    expect(tied.state.phase).toBe("voting_tie");
+    expect(tied.chooseMap("merged34", 30_000)).toBe("vote_result");
+
+    const empty = new GameEngine(map, structuredClone(defaults));
+    empty.beginVoting(0);
+    empty.tick(30_000);
+    expect(empty.state.phase).toBe("vote_empty");
+  });
+  it("pauses the authoritative clock and resumes with remaining time", () => {
+    const g = game();
+    const endsAt = g.state.endsAt;
+    expect(g.pause(endsAt - 10_000)).toBe("paused");
+    expect(g.state.pausedRemaining).toBe(10_000);
+    expect(g.resume(500_000)).toBe("running");
+    expect(g.state.endsAt).toBe(510_000);
+  });
   it("ends at territory threshold and retains bans on reset", () => {
     const g = game();
     g.state.settings.winPercent = 50;

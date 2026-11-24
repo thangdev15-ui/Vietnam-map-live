@@ -84,9 +84,23 @@ export function Admin({
         await api("start", token, {});
         showCeremony("start");
       },
-      "✦ Trận mới đã mở. Sẵn sàng nhận người chơi.",
+      "✦ Bình chọn bản đồ đã mở. Khán giả có 30 giây để comment chọn bản đồ.",
       "start",
     );
+  const chooseMap = (map: Settings["map"]) =>
+    run(
+      () => api("choose-map", token, { map }),
+      "✦ Đã chọn bản đồ. Đang chuẩn bị chiến trường.",
+      "choose-map",
+    );
+  const closeVote = () =>
+    run(
+      () => api("close-vote", token, {}),
+      "✓ Đã chốt bình chọn bản đồ.",
+      "close-vote",
+    );
+  const pauseMatch = () => run(() => api("pause", token, {}), "Ⅱ Trận đã tạm dừng.", "pause");
+  const resumeMatch = () => run(() => api("resume", token, {}), "▶ Trận đã tiếp tục.", "resume");
   const endMatch = () =>
     run(
       async () => {
@@ -274,12 +288,12 @@ export function Admin({
         {ceremony && (
           <div className={`command-ceremony ${ceremony}`} role="status">
             <span>{ceremony === "start" ? "✦" : "◼"}</span>
-            <strong>{ceremony === "start" ? "CHIẾN TRƯỜNG ĐÃ MỞ" : "TRẬN ĐẤU ĐÃ KẾT THÚC"}</strong>
-            <small>{ceremony === "start" ? "Sẵn sàng nhận lệnh từ TikTok LIVE" : "Kết quả đã được chốt"}</small>
+            <strong>{ceremony === "start" ? "BÌNH CHỌN BẢN ĐỒ ĐÃ MỞ" : "TRẬN ĐẤU ĐÃ KẾT THÚC"}</strong>
+            <small>{ceremony === "start" ? "Khán giả có 30 giây để comment chọn bản đồ" : "Kết quả đã được chốt"}</small>
           </div>
         )}
         {tab === "Tổng quan" && (
-          <Overview state={state} status={status} startMatch={startMatch} endMatch={endMatch} busy={busy} />
+          <Overview state={state} status={status} startMatch={startMatch} endMatch={endMatch} chooseMap={chooseMap} closeVote={closeVote} pauseMatch={pauseMatch} resumeMatch={resumeMatch} busy={busy} />
         )}
         {tab === "TikTok LIVE" && (
           <Live

@@ -26,6 +26,7 @@ export function Rules({
         </label>
         {(
           [
+            ["votingDuration", "Thời gian bình chọn bản đồ (giây)"],
             ["duration", "Thời gian (giây)"],
             ["hp", "Máu tối đa"],
             ["attack", "Sức tấn công"],
@@ -36,6 +37,26 @@ export function Rules({
           ] as [keyof Settings, string][]
         ).map(([k, l]) => numeric(k, l))}
       </div>
+      <label className="map-options">
+        Bản đồ cho phép bình chọn
+        <span>
+          {(["historical63", "merged34"] as const).map((map) => (
+            <button
+              type="button"
+              className={settings.activeMaps.includes(map) ? "selected" : "secondary"}
+              key={map}
+              onClick={() => {
+                const activeMaps = settings.activeMaps.includes(map)
+                  ? settings.activeMaps.filter((item) => item !== map)
+                  : [...settings.activeMaps, map];
+                if (activeMaps.length) setSettings({ ...settings, activeMaps });
+              }}
+            >
+              {map === "historical63" ? "MAP 1 · 63 tỉnh" : "MAP 2 · 34 vùng"}
+            </button>
+          ))}
+        </span>
+      </label>
       <h2>Các phe</h2>
       {settings.teams.map((t, i) => (
         <div className="row" key={t.id}>

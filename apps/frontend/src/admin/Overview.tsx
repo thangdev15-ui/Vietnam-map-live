@@ -4,8 +4,12 @@ export function Overview({
   status,
   startMatch,
   endMatch,
+  chooseMap,
+  closeVote,
+  pauseMatch,
+  resumeMatch,
   busy,
-}: Pick<AdminPanelProps, "state" | "status" | "startMatch" | "endMatch" | "busy">) {
+}: Pick<AdminPanelProps, "state" | "status" | "startMatch" | "endMatch" | "chooseMap" | "closeVote" | "pauseMatch" | "resumeMatch" | "busy">) {
   return (
     <>
       <div className="metrics">
@@ -23,9 +27,9 @@ export function Overview({
       </div>
       <section>
         <h2>Điều khiển trận</h2>
-        <p>Trận mới xóa điểm và lãnh thổ; danh sách khóa được giữ lại.</p>
+        <p>Bắt đầu sẽ mở bình chọn bản đồ trong 30 giây. Điểm và lãnh thổ được làm mới; danh sách khóa được giữ lại.</p>
         <button className="command-start" disabled={Boolean(busy)} onClick={startMatch}>
-          {busy === "start" ? "ĐANG TRIỂN KHAI…" : "✦ Bắt đầu trận mới"}
+          {busy === "start" ? "ĐANG MỞ BÌNH CHỌN…" : "✦ Mở bình chọn bản đồ"}
         </button>
         <button
           className="secondary command-end"
@@ -34,6 +38,23 @@ export function Overview({
         >
           {busy === "end" ? "ĐANG KHÓA CHIẾN TRƯỜNG…" : "◼ Kết thúc trận"}
         </button>
+        {state.phase === "running" && <button className="secondary command-end" disabled={Boolean(busy)} onClick={pauseMatch}>Ⅱ Tạm dừng trận</button>}
+        {state.phase === "paused" && <button className="command-start" disabled={Boolean(busy)} onClick={resumeMatch}>▶ Tiếp tục trận</button>}
+        {state.phase === "voting" && (
+          <button className="secondary command-end" disabled={Boolean(busy)} onClick={closeVote}>
+            {busy === "close-vote" ? "ĐANG CHỐT PHIẾU…" : "✓ Chốt bình chọn ngay"}
+          </button>
+        )}
+        {(state.phase === "voting_tie" || state.phase === "vote_empty") && state.voting && (
+          <div className="map-admin-choice">
+            <b>{state.phase === "voting_tie" ? "Phiếu hòa: chọn chiến trường" : "Chưa có phiếu: chọn chiến trường"}</b>
+            {state.voting.candidates.map((candidate) => (
+              <button key={candidate.id} disabled={Boolean(busy)} onClick={() => chooseMap(candidate.id)}>
+                {candidate.name} <small>({candidate.votes} phiếu)</small>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );

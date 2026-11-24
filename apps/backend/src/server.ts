@@ -41,12 +41,25 @@ export function createApp(token: string, dbPath: string) {
   const ttsJobs = new Map<string, { url: string; expiresAt: number }>();
   const publicState = () => ({
     ...engine.state,
+    voting: engine.state.voting
+      ? { ...engine.state.voting, voterIds: [] }
+      : undefined,
     players: engine.state.players
       .filter((p) => !p.blocked)
       .sort((a, b) => b.score - a.score)
       .slice(0, 20)
       .map((p) => ({ ...p, id: "", history: [] })),
   });
+  const activateMap = (map: typeof settings.map) => {
+    const banned = engine.state.players.filter((player) => player.blocked);
+    const selectedSettings = { ...engine.state.settings, map };
+    engine = new GameEngine(load(map), selectedSettings);
+    engine.state.players = banned;
+    processor.engine = engine;
+    engine.start();
+    store.set("state", engine.state);
+    io.emit("mapChanged");
+  };
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(express.json({ limit: "128kb" }));
   app.use("/api", rateLimit({ windowMs: 60000, limit: 300 }));
@@ -134,19 +147,50 @@ export function createApp(token: string, dbPath: string) {
     }),
   );
   app.post("/api/admin/start", (_q, r) => {
-    if (engine.state.phase === "running") {
-      r.status(409).json({ error: "Hãy kết thúc trận đang chạy trước" });
+    const result = engine.beginVoting();
+    if (result !== "voting") {
+      r.status(409).json({ error: result });
       return;
     }
     processor.queue = [];
     processor.pending.clear();
     processor.limits.clear();
-    engine.start();
     store.set("state", engine.state);
     r.json({ ok: true });
   });
+  app.post("/api/admin/choose-map", (q, r) => {
+    const { map } = z.object({ map: z.enum(["historical63", "merged34"]) }).parse(q.body);
+    const result = engine.chooseMap(map);
+    if (result !== "vote_result") {
+      r.status(409).json({ error: result });
+      return;
+    }
+    store.set("state", engine.state);
+    r.json({ ok: true });
+  });
+  app.post("/api/admin/close-vote", (_q, r) => {
+    const result = engine.finishVoting();
+    if (!['vote_result', 'voting_tie', 'vote_empty'].includes(result)) {
+      r.status(409).json({ error: result });
+      return;
+    }
+    store.set("state", engine.state);
+    r.json({ ok: true, result });
+  });
   app.post("/api/admin/end", (_q, r) => {
     engine.finish();
+    store.set("state", engine.state);
+    r.json({ ok: true });
+  });
+  app.post("/api/admin/pause", (_q, r) => {
+    const result = engine.pause();
+    if (result !== "paused") return r.status(409).json({ error: result });
+    store.set("state", engine.state);
+    r.json({ ok: true });
+  });
+  app.post("/api/admin/resume", (_q, r) => {
+    const result = engine.resume();
+    if (result !== "running") return r.status(409).json({ error: result });
     store.set("state", engine.state);
     r.json({ ok: true });
   });
@@ -222,7 +266,8 @@ export function createApp(token: string, dbPath: string) {
     try {
       processor.drainPaced();
       if (Date.now() - lastTick >= 1000) {
-        engine.tick();
+        const selectedMap = engine.tick();
+        if (selectedMap) activateMap(selectedMap);
         lastTick = Date.now();
         store.set("state", engine.state);
       }

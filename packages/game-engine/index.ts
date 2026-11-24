@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   defaults,
+  mapCatalog,
   norm,
   type Settings,
   type Province,
@@ -46,11 +47,70 @@ export class GameEngine {
     this.state.phase = "running";
     this.state.endsAt = now + this.state.settings.duration * 1000;
   }
+  beginVoting(now = Date.now()) {
+    if (!["waiting", "ended"].includes(this.state.phase))
+      return this.state.phase === "running" || this.state.phase === "paused"
+        ? "Hãy kết thúc trận đang chạy trước"
+        : "Vòng bình chọn đang diễn ra";
+    const blocked = this.state.players.filter((p) => p.blocked);
+    const candidates = this.state.settings.activeMaps.map((id) => ({ ...mapCatalog[id], votes: 0 }));
+    this.state = new GameEngine(this.provinces, this.state.settings).state;
+    this.state.players = blocked.map((p) => ({
+      ...p,
+      score: 0,
+      target: null,
+      team: null,
+      history: [],
+      combo: 0,
+    }));
+    this.state.phase = "voting";
+    this.state.voting = {
+      endsAt: now + this.state.settings.votingDuration * 1000,
+      candidates,
+      voterIds: [],
+    };
+    this.log("Bình chọn bản đồ đã mở");
+    return "voting";
+  }
+  chooseMap(id: Settings["map"], now = Date.now()) {
+    if (!this.state.settings.activeMaps.includes(id)) return "Bản đồ chưa được kích hoạt";
+    if (!["voting_tie", "vote_empty", "vote_result", "voting"].includes(this.state.phase))
+      return "Không có vòng bình chọn cần chọn";
+    const candidates = this.state.voting?.candidates ?? [];
+    const winner = candidates.find((candidate) => candidate.id === id);
+    if (!winner) return "Bản đồ không có trong vòng bình chọn";
+    this.state.phase = "vote_result";
+    this.state.voting = { ...this.state.voting!, winner: id, resultEndsAt: now + 2500 };
+    this.log(`${winner.name} được chọn làm chiến trường`);
+    return "vote_result";
+  }
+  finishVoting(now = Date.now()) {
+    if (this.state.phase !== "voting" || !this.state.voting)
+      return "Không có vòng bình chọn đang mở";
+    const ranked = [...this.state.voting.candidates].sort((a, b) => b.votes - a.votes);
+    if (!ranked[0] || ranked[0].votes === 0) {
+      this.state.phase = "vote_empty";
+      this.log("Bình chọn chưa có phiếu — quản trị viên hãy chọn bản đồ");
+      return "vote_empty";
+    }
+    if (ranked[1]?.votes === ranked[0].votes) {
+      this.state.phase = "voting_tie";
+      this.log("Bình chọn hòa — quản trị viên hãy chọn bản đồ");
+      return "voting_tie";
+    }
+    return this.chooseMap(ranked[0].id, now);
+  }
   log(s: string) {
     this.state.feed.unshift(s);
     this.state.feed.length = Math.min(60, this.state.feed.length);
   }
   tick(now = Date.now()) {
+    if (this.state.phase === "voting" && this.state.voting && now >= this.state.voting.endsAt) {
+      this.finishVoting(now);
+      return;
+    }
+    if (this.state.phase === "vote_result" && this.state.voting?.winner && this.state.voting.resultEndsAt && now >= this.state.voting.resultEndsAt)
+      return this.state.voting.winner;
     if (this.state.phase !== "running") return;
     for (const t of this.state.territories)
       if (t.owner)
@@ -70,6 +130,21 @@ export class GameEngine {
     this.state.winner = ranks[0].n > ranks[1].n ? ranks[0].id : null;
     this.state.phase = "ended";
     this.log("Trận đấu kết thúc");
+  }
+  pause(now = Date.now()) {
+    if (this.state.phase !== "running") return "Không có trận đang chạy";
+    this.state.pausedRemaining = Math.max(0, this.state.endsAt - now);
+    this.state.phase = "paused";
+    this.log("Trận đấu đã tạm dừng");
+    return "paused";
+  }
+  resume(now = Date.now()) {
+    if (this.state.phase !== "paused") return "Trận không ở trạng thái tạm dừng";
+    this.state.endsAt = now + (this.state.pausedRemaining ?? 0);
+    this.state.pausedRemaining = undefined;
+    this.state.phase = "running";
+    this.log("Trận đấu tiếp tục");
+    return "running";
   }
   player(e: LiveEvent): Player {
     let p = this.state.players.find((p) => p.id === e.userId);
@@ -95,6 +170,7 @@ export class GameEngine {
   apply(e: LiveEvent) {
     if (this.state.phase === "running" && Date.now() >= this.state.endsAt)
       this.finish();
+    if (this.state.phase === "voting") return this.vote(e);
     if (this.state.phase !== "running") return "Trận chưa chạy";
     const p = this.player(e);
     if (p.blocked) return "Đã khóa";
@@ -182,6 +258,20 @@ export class GameEngine {
       e.type === "like" ? Math.min(e.count, 10) : 10,
       e.id,
     );
+  }
+  private vote(e: LiveEvent) {
+    if (e.type !== "comment" || !this.state.voting) return "Đang bình chọn bản đồ";
+    const text = norm(e.text ?? "");
+    const candidate = this.state.voting.candidates.find((item) =>
+      [item.keyword, item.id, item.name].some((key) => norm(key) === text),
+    );
+    if (!candidate) return "Bình luận không phải lựa chọn bản đồ";
+    if (this.state.voting.voterIds.includes(e.userId)) return "Đã bình chọn";
+    this.state.voting.voterIds.push(e.userId);
+    candidate.votes++;
+    this.state.processed++;
+    this.log(`${e.username} bình chọn ${candidate.name}`);
+    return "vote";
   }
   private rememberContributor(
     territory: State["territories"][number],
