@@ -38,7 +38,7 @@ describe("Game rules", () => {
     for (let i = 0; i < 2; i++) expect(g.apply(event("Hà Nội"))).toBe("light");
     expect(g.apply(event("Hà Nội"))).toBe("capture");
     expect(g.state.territories[0]).toMatchObject({ owner: "gold", hp: 100 });
-    expect(g.state.players[0]).toMatchObject({ team: "gold", target: "ha-noi", score: 100 });
+    expect(g.state.players[0]).toMatchObject({ team: "gold", target: "ha-noi", score: 110 });
   });
   it("keeps a lit city open and shows later contributors", () => {
     const g = game();
@@ -58,6 +58,21 @@ describe("Game rules", () => {
     expect(g.apply({ ...event(""), type: "gift", giftId: "super" })).toBe("super");
     expect(g.state.territories[0].owner).toBe("gold");
     expect(g.state.effects.some((effect) => effect.kind === "super")).toBe(true);
+  });
+  it("awards combo bonuses at the configured threshold and expires them", () => {
+    const settings = structuredClone(defaults);
+    settings.comboThreshold = 3;
+    settings.comboBonus = 12;
+    settings.comboWindow = 2;
+    const g = new GameEngine(map, settings);
+    g.start();
+    for (let i = 0; i < 3; i++) g.apply({ ...event("hà nội"), id: `combo-${i}` });
+    expect(g.state.players[0].combo).toBe(3);
+    expect(g.state.players[0].score).toBe(87);
+    expect(g.state.effects.some((effect) => effect.kind === "combo" && effect.power === 12)).toBe(true);
+    g.state.players[0].comboAt = Date.now() - 2_001;
+    g.tick();
+    expect(g.state.players[0].combo).toBe(0);
   });
   it("captures province only after defense exhausted", () => {
     const g = game();

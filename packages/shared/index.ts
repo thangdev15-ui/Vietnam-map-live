@@ -56,6 +56,9 @@ export const settingsSchema = z
     map: mapSchema,
     activeMaps: z.array(mapSchema).min(1).max(3).default(["war-room", "cyber-grid", "imperial-atlas"]),
     votingDuration: z.number().int().min(10).max(120).default(30),
+    comboWindow: z.number().int().min(2).max(60).default(10),
+    comboThreshold: z.number().int().min(2).max(20).default(3),
+    comboBonus: z.number().int().min(0).max(100000).default(10),
   })
   .superRefine((s, c) => {
     if (
@@ -89,6 +92,9 @@ export const defaults: Settings = {
   map: "war-room",
   activeMaps: ["war-room", "cyber-grid", "imperial-atlas"],
   votingDuration: 30,
+  comboWindow: 10,
+  comboThreshold: 3,
+  comboBonus: 10,
 };
 export const eventSchema = z.object({
   id: z.string().min(1).max(200),

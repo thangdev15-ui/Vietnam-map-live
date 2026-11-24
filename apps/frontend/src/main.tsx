@@ -27,6 +27,9 @@ function PortraitBroadcast({
   const voteSeconds = Math.max(0, Math.ceil(((state.voting?.endsAt ?? Date.now()) - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
   const leader = state.players[0];
+  const comboPlayer = state.players
+    .filter((player) => player.combo >= state.settings.comboThreshold)
+    .sort((a, b) => b.combo - a.combo)[0];
   const latestEffect = state.effects.at(-1);
   const latestProvinceName = latestEffect
     ? provinces.find((p) => p.id === latestEffect.province)?.name
@@ -94,6 +97,13 @@ function PortraitBroadcast({
       <section className="portrait-arena">
         <div className="portrait-map-glow" />
         <BattleMap provinces={provinces} state={state} onSelect={setSelected} />
+        {comboPlayer && (
+          <div className="portrait-combo" aria-live="polite">
+            <span>COMBO ×{comboPlayer.combo}</span>
+            <b>{comboPlayer.name}</b>
+            <small>CHUỖI ÁNH SÁNG ĐANG DUY TRÌ</small>
+          </div>
+        )}
         {state.phase === "voting" && state.voting && (
           <section className="map-vote-overlay" aria-live="polite">
             <div className="vote-kicker">BÌNH CHỌN CHIẾN TRƯỜNG</div>

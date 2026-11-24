@@ -115,6 +115,11 @@ export class GameEngine {
     if (this.state.phase === "vote_result" && this.state.voting?.winner && this.state.voting.resultEndsAt && now >= this.state.voting.resultEndsAt)
       return this.state.voting.winner;
     if (this.state.phase !== "running") return;
+    for (const player of this.state.players)
+      if (player.combo && player.comboAt && now - player.comboAt > this.state.settings.comboWindow * 1000) {
+        player.combo = 0;
+        player.comboAt = undefined;
+      }
     for (const t of this.state.territories)
       if (t.owner)
         t.hp = Math.min(
@@ -310,7 +315,7 @@ export class GameEngine {
   ) {
     const power = Math.max(1, Math.round(this.state.settings.attack / 5));
     player.score += power;
-    this.bumpCombo(player);
+    const comboBonus = this.bumpCombo(player);
     player.history.unshift(`cùng thắp ${territory.id} +${power}`);
     player.history.length = Math.min(30, player.history.length);
     this.log(
@@ -325,6 +330,8 @@ export class GameEngine {
       player: player.name,
       avatar: player.avatar,
     });
+    if (comboBonus)
+      this.state.effects.push({ id: randomUUID(), province: territory.id, team: player.team!, kind: "combo", power: comboBonus, player: player.name, avatar: player.avatar });
     this.state.effects = this.state.effects.slice(-30);
     return "gather";
   }
@@ -368,7 +375,7 @@ export class GameEngine {
       }
     }
     p.score += power;
-    this.bumpCombo(p);
+    const comboBonus = this.bumpCombo(p);
     p.history.unshift(`${skill} ${t.id} +${power}`);
     p.history.length = Math.min(30, p.history.length);
     this.state.effects.push({
@@ -380,6 +387,8 @@ export class GameEngine {
       player: p.name,
       avatar: p.avatar,
     });
+    if (comboBonus)
+      this.state.effects.push({ id: randomUUID(), province: t.id, team: p.team!, kind: "combo", power: comboBonus, player: p.name, avatar: p.avatar });
     this.state.effects = this.state.effects.slice(-30);
     if (captured) this.unlockChest(t.id, p.name);
     if (
@@ -392,8 +401,14 @@ export class GameEngine {
     return kind;
   }
   private bumpCombo(player: Player, now = Date.now()) {
-    player.combo = !player.comboAt || now - player.comboAt > 10_000 ? 1 : player.combo + 1;
+    player.combo = !player.comboAt || now - player.comboAt > this.state.settings.comboWindow * 1000 ? 1 : player.combo + 1;
     player.comboAt = now;
+    const threshold = this.state.settings.comboThreshold;
+    if (player.combo < threshold || player.combo % threshold !== 0) return 0;
+    const bonus = this.state.settings.comboBonus * Math.floor(player.combo / threshold);
+    player.score += bonus;
+    this.log(`${player.name} đạt COMBO ×${player.combo} · +${bonus} điểm`);
+    return bonus;
   }
   private unlockChest(provinceId: string, player: string) {
     const lit = this.state.territories.filter((territory) => territory.owner).length;
@@ -416,8 +431,10 @@ export class GameEngine {
       captured = true;
     }
     player.score += power;
-    this.bumpCombo(player);
+    const comboBonus = this.bumpCombo(player);
     this.state.effects.push({ id, province: territory.id, team: player.team!, kind: "super", power, player: player.name, avatar: player.avatar });
+    if (comboBonus)
+      this.state.effects.push({ id: randomUUID(), province: territory.id, team: player.team!, kind: "combo", power: comboBonus, player: player.name, avatar: player.avatar });
     this.state.effects = this.state.effects.slice(-30);
     this.log(`${player.name} kích hoạt SIÊU THẮP SÁNG tại ${this.provinces.find((item) => item.id === territory.id)?.name}`);
     if (captured) this.unlockChest(territory.id, player.name);

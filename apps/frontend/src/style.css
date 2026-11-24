@@ -746,6 +746,10 @@ label select {
 .portrait-arena .map-canvas canvas { width:100% !important; height:100% !important; }
 .portrait-map-glow { position:absolute; inset: 13% 12% 12%; z-index: 0; border-radius:50%; background:radial-gradient(ellipse, #ffd54b40, #2e71d638 37%, transparent 68%); filter: blur(14px); animation: mapBreath 4.5s ease-in-out infinite; }
 .portrait-province-chip { position:absolute; z-index:3; left:4%; top:4%; display:grid; grid-template-columns:auto 1fr; column-gap:6px; align-items:center; padding:7px 9px; max-width:40%; border:1px solid #f5ca5a9e; border-radius:7px; background:#08133ee8; box-shadow:0 5px 18px #0009; }
+.portrait-combo { position:absolute; z-index:5; left:50%; top:8%; display:grid; justify-items:center; gap:1px; min-width:142px; padding:7px 12px; border:1px solid #ffdf67; border-radius:9px; background:linear-gradient(135deg,#7b2600ed,#d46606ef,#7b2600ed); box-shadow:0 0 24px #ffb72d8c,0 7px 20px #0009; transform:translateX(-50%); animation:comboPulse .7s ease-in-out infinite alternate; }
+.portrait-combo span { color:#fff1a7; font-size:clamp(12px,1.7vw,21px); font-weight:1000; font-style:italic; }
+.portrait-combo b { max-width:155px; overflow:hidden; color:#fff; font-size:clamp(8px,1vw,12px); white-space:nowrap; text-overflow:ellipsis; }
+.portrait-combo small { color:#ffe7a5; font-size:clamp(6px,.7vw,8px); font-weight:800; }
 .portrait-province-chip > span { width:8px; height:8px; border-radius:50%; grid-row:span 2; box-shadow:0 0 8px currentColor; }
 .portrait-province-chip b { font-size:clamp(9px,1.2vw,15px); }
 .portrait-province-chip small { color:#bed1ef; font-size:clamp(7px,.9vw,11px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -812,6 +816,7 @@ label select {
 @keyframes featuredEnter { from { opacity:0; transform:translate(-50%,-42%) scale(.92); } }
 @keyframes eventSlam { 0% { opacity:0; transform:translate(-50%,-38%) scale(.72); } 68% { transform:translate(-50%,-52%) scale(1.06); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
 @keyframes mapBreath { 50% { opacity:.62; transform:scale(1.07); } }
+@keyframes comboPulse { to { transform:translateX(-50%) scale(1.055); filter:brightness(1.15); } }
 @container (max-width: 600px) {
   .portrait-header { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 5px; }
   .portrait-audio select { display:none; }

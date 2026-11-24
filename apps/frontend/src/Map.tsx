@@ -134,11 +134,12 @@ export function BattleMap({
         tourReset?.remove(false);
         const capture = kind === "capture";
         const superLight = kind === "super";
+        const combo = kind === "combo";
         const lighting = kind === "light";
         const gathering = kind === "gather";
-        camera.pan(position.x, position.y, superLight ? 720 : capture ? 560 : 360, "Cubic.easeOut");
-        camera.zoomTo(superLight ? 2.55 : capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, superLight ? 720 : capture ? 560 : 360, "Cubic.easeOut");
-        cameraReset = this.time.delayedCall(superLight ? 3500 : capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
+        camera.pan(position.x, position.y, superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
+        camera.zoomTo(superLight ? 2.55 : combo ? 1.8 : capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, superLight ? 720 : combo ? 480 : capture ? 560 : 360, "Cubic.easeOut");
+        cameraReset = this.time.delayedCall(superLight ? 3500 : combo ? 1800 : capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
           camera.pan(350, 410, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
           camera.zoomTo(1, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
         });
@@ -171,6 +172,7 @@ export function BattleMap({
         const capture = e.kind === "capture";
         const superLight = e.kind === "super";
         const chest = e.kind === "chest";
+        const combo = e.kind === "combo";
         const lighting = e.kind === "light";
         const gathering = e.kind === "gather";
         this.flashProvince(province, color, capture || superLight);
@@ -179,9 +181,9 @@ export function BattleMap({
         };
         const ring = this.add.circle(position.x, position.y, 7, color, 0.22).setStrokeStyle(2.5, color, 1);
         const label = this.add
-          .text(position.x, position.y - 4, superLight ? `☄ SIÊU THẮP SÁNG\n${e.player}` : chest ? `🎁 RƯƠNG ÁNH SÁNG\nMỐC ${e.power} TỈNH` : capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
+          .text(position.x, position.y - 4, superLight ? `☄ SIÊU THẮP SÁNG\n${e.player}` : chest ? `🎁 RƯƠNG ÁNH SÁNG\nMỐC ${e.power} TỈNH` : combo ? `✦ COMBO!\n${e.player} +${e.power}` : capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
             fontFamily: "Arial Black, sans-serif",
-            fontSize: superLight || chest || capture ? "14px" : "12px",
+            fontSize: superLight || chest || combo || capture ? "14px" : "12px",
             align: "center",
             color: "#ffffff",
             stroke: "#09122b",
@@ -220,9 +222,9 @@ export function BattleMap({
             lightPlayer();
           }
         };
-        if (superLight || chest) {
+        if (superLight || chest || combo) {
           const beam = this.add.rectangle(position.x, -20, 14, 44, color, 0.9).setBlendMode(Phaser.BlendModes.ADD);
-          this.tweens.add({ targets: beam, y: position.y, scaleX: superLight ? 8 : 5, scaleY: superLight ? 20 : 14, alpha: 0, duration: reduced ? 1 : superLight ? 900 : 700, ease: "Quad.easeIn", onComplete: () => { beam.destroy(); explode(); } });
+          this.tweens.add({ targets: beam, y: position.y, scaleX: superLight ? 8 : combo ? 6 : 5, scaleY: superLight ? 20 : combo ? 17 : 14, alpha: 0, duration: reduced ? 1 : superLight ? 900 : 700, ease: "Quad.easeIn", onComplete: () => { beam.destroy(); explode(); } });
         } else if (e.kind === "attack") {
           const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
           const start = { x: position.x + Math.cos(angle) * 170, y: position.y + Math.sin(angle) * 170 };

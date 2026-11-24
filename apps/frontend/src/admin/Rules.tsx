@@ -28,6 +28,9 @@ export function Rules({
         {(
           [
             ["votingDuration", "Thời gian bình chọn bản đồ (giây)"],
+            ["comboWindow", "Thời gian giữ combo (giây)"],
+            ["comboThreshold", "Số lượt để đạt combo"],
+            ["comboBonus", "Điểm thưởng mỗi mốc combo"],
             ["duration", "Thời gian (giây)"],
             ["hp", "Máu tối đa"],
             ["attack", "Sức tấn công"],
