@@ -89,6 +89,22 @@ describe("Server integration", () => {
       expect.arrayContaining([expect.objectContaining({ result: "cooldown" })]),
     );
   });
+  it("requires admin auth and triggers super light through the real API", async () => {
+    const url = await start();
+    server!.engine.start();
+    expect((await fetch(url + "/api/admin/super-light", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ province: "ha-noi" }),
+    })).status).toBe(401);
+    const response = await fetch(url + "/api/admin/super-light", {
+      method: "POST",
+      headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+      body: JSON.stringify({ province: "ha-noi", power: 100 }),
+    });
+    expect(response.ok).toBe(true);
+    expect(server!.engine.state.effects.some((effect) => effect.kind === "super")).toBe(true);
+  });
   it("processes 1000 distinct viewers without event loss", async () => {
     await start();
     server!.engine.start();
