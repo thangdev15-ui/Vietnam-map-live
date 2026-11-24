@@ -393,6 +393,11 @@ export class GameEngine {
     if (captured) {
       this.addLightSpread(t.id, p);
       this.unlockChest(t.id, p.name);
+      if (this.state.territories.every((territory) => territory.owner)) {
+        this.state.effects.push({ id: randomUUID(), province: t.id, team: p.team!, kind: "complete", power: this.state.territories.length, player: p.name, avatar: p.avatar });
+        this.state.effects = this.state.effects.slice(-30);
+        this.log("TOÀN BẢN ĐỒ BỪNG SÁNG!");
+      }
     }
     if (
       (this.state.territories.filter((t) => t.owner === p.team).length /

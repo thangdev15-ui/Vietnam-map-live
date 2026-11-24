@@ -80,6 +80,18 @@ describe("Game rules", () => {
     expect(g.state.effects.filter((effect) => effect.kind === "spread")).toHaveLength(1);
     expect(g.state.territories[1].owner).toBeNull();
   });
+  it("emits a completion event only when every province is lit", () => {
+    const settings = structuredClone(defaults);
+    settings.winPercent = 100;
+    settings.lightSpread = false;
+    const g = new GameEngine(map, settings);
+    g.start();
+    for (const city of ["hà nội", "cần thơ"])
+      for (let i = 0; i < 4; i++) g.apply({ ...event(city), id: `${city}-${i}` });
+    expect(g.state.territories.every((territory) => territory.owner)).toBe(true);
+    expect(g.state.effects.some((effect) => effect.kind === "complete")).toBe(true);
+    expect(g.state.phase).toBe("ended");
+  });
   it("captures province only after defense exhausted", () => {
     const g = game();
     g.apply(event("đỏ"));
