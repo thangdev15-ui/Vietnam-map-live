@@ -46,18 +46,20 @@ function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: S
         <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" />
         {/* The dormant map is deliberately dark. Light is revealed only by
             the exact polygon of the province receiving game progress. */}
-        <rect width="700" height="820" fill="#010613" opacity="0.83" />
+        <rect width="700" height="820" fill="#01040c" opacity="0.92" />
       </g>
       {provinces.map((province) => {
         const territory = territoryById.get(province.id);
         const progress = Phaser.Math.Clamp(1 - (territory?.hp ?? state.settings.hp) / state.settings.hp, 0, 1);
         const lit = Boolean(territory?.owner);
         if (!lit && progress <= 0) return null;
-        const brightness = lit ? 1 : 0.18 + progress * 0.82;
+        // A partially charged province is still visible, but cannot look as
+        // bright as a completed one. At 0% it has no separate light layer.
+        const brightness = lit ? 1 : Math.max(0.16, progress);
         return (
           <g key={province.id} clipPath={`url(#${prefix}-${province.id})`} className={lit ? "terrain-province terrain-province-lit" : "terrain-province"}>
             <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" opacity={brightness} />
-            <rect width="700" height="820" fill={lit ? "#ffd33d" : "#f0a628"} opacity={lit ? 0.3 : progress * 0.18} />
+            <rect width="700" height="820" fill={lit ? "#ffd33d" : "#f0a628"} opacity={lit ? 0.3 : 0.06 + progress * 0.34} />
             {lit && <rect width="700" height="820" fill="#fff3a2" opacity="0.12" className="terrain-lit-pulse" />}
           </g>
         );
@@ -147,6 +149,14 @@ export function BattleMap({
         });
       }
       refreshMarkers(s: State) {
+        // Map 2 is SVG-only. Phaser canvas and SVG scale differently in the
+        // responsive broadcast layout, so canvas markers would drift away
+        // from their province. The broadcast HUD remains the player display.
+        if (s.settings.map === "cyber-grid") {
+          if (markerSignature) markers.removeAll(true);
+          markerSignature = "";
+          return;
+        }
         const lit = s.territories.filter((t) => t.owner);
         const key = lit
           .map((t) => `${t.id}:${(t.contributors ?? []).map((player) => player.name).join(",")}`)
