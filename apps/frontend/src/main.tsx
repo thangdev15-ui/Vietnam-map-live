@@ -65,7 +65,7 @@ function PortraitBroadcast({
     ? `${latestEffect.player} vừa ${latestEffect.kind === "capture" ? "thắp sáng" : latestEffect.kind === "heal" ? "tiếp năng lượng cho" : "gửi ánh sáng tới"} ${latestProvinceName ?? "một vùng"}`
     : state.feed[0] ?? "Bình luận tên tỉnh, thành để thắp sáng bản đồ";
   return (
-    <main className="portrait-live" aria-label="Màn hình phát TikTok dọc">
+    <main className={`portrait-live theme-${state.settings.map}`} aria-label="Màn hình phát TikTok dọc">
       <header className="portrait-header">
         <div className="portrait-live-badge"><i /> LIVE</div>
         <div className="portrait-title">
@@ -356,9 +356,7 @@ function App() {
             <small>W ─ E</small>
           </div>
           <div className="map-note">
-            {state.settings.map === "historical63"
-              ? "63 tỉnh/thành lịch sử • trước 2025"
-              : "34 vùng gộp từ bản đồ lịch sử"}
+            63 tỉnh/thành lịch sử • chiến trường {state.settings.map.replace(/-/g, " ")}
             <br />
             <small>
               Dữ liệu geoBoundaries • không dùng xác định chủ quyền, địa giới

@@ -133,13 +133,14 @@ export function BattleMap({
         cameraReset?.remove(false);
         tourReset?.remove(false);
         const capture = kind === "capture";
+        const superLight = kind === "super";
         const lighting = kind === "light";
         const gathering = kind === "gather";
-        camera.pan(position.x, position.y, capture ? 560 : 360, "Cubic.easeOut");
-        camera.zoomTo(capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, capture ? 560 : 360, "Cubic.easeOut");
-        cameraReset = this.time.delayedCall(capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
-          camera.pan(350, 410, capture ? 980 : 460, "Sine.easeInOut");
-          camera.zoomTo(1, capture ? 980 : 460, "Sine.easeInOut");
+        camera.pan(position.x, position.y, superLight ? 720 : capture ? 560 : 360, "Cubic.easeOut");
+        camera.zoomTo(superLight ? 2.55 : capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, superLight ? 720 : capture ? 560 : 360, "Cubic.easeOut");
+        cameraReset = this.time.delayedCall(superLight ? 3500 : capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
+          camera.pan(350, 410, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
+          camera.zoomTo(1, superLight ? 1200 : capture ? 980 : 460, "Sine.easeInOut");
         });
       }
       flashProvince(province: Province, color: number, capture: boolean) {
@@ -164,21 +165,23 @@ export function BattleMap({
         if (!province) return;
         active++;
         const position = project(province.center);
-        const color = 0xffcf43;
+        const color = e.kind === "super" ? 0xff5f21 : e.kind === "chest" ? 0x8b5cff : 0xffcf43;
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (!reduced) this.focusEvent(position, e.kind);
         const capture = e.kind === "capture";
+        const superLight = e.kind === "super";
+        const chest = e.kind === "chest";
         const lighting = e.kind === "light";
         const gathering = e.kind === "gather";
-        this.flashProvince(province, color, capture);
+        this.flashProvince(province, color, capture || superLight);
         const finish = () => {
           active--;
         };
         const ring = this.add.circle(position.x, position.y, 7, color, 0.22).setStrokeStyle(2.5, color, 1);
         const label = this.add
-          .text(position.x, position.y - 4, capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
+          .text(position.x, position.y - 4, superLight ? `☄ SIÊU THẮP SÁNG\n${e.player}` : chest ? `🎁 RƯƠNG ÁNH SÁNG\nMỐC ${e.power} TỈNH` : capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
             fontFamily: "Arial Black, sans-serif",
-            fontSize: capture ? "14px" : "12px",
+            fontSize: superLight || chest || capture ? "14px" : "12px",
             align: "center",
             color: "#ffffff",
             stroke: "#09122b",
@@ -202,12 +205,12 @@ export function BattleMap({
           this.time.delayedCall(2600, () => this.tweens.add({ targets: card, alpha: 0, y: card.y - 8, duration: 350, onComplete: () => card.destroy() }));
         };
         const explode = () => {
-          this.burst(position, color, capture ? 26 : gathering ? 16 : lighting ? 14 : 11, capture ? 78 : gathering ? 48 : lighting ? 43 : 36);
-          this.tweens.add({ targets: ring, scale: capture ? 13 : gathering ? 8 : lighting ? 6.8 : 5.2, alpha: 0, duration: capture ? 1280 : gathering ? 900 : lighting ? 720 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
-          this.tweens.add({ targets: label, y: position.y - (capture ? 62 : 32), alpha: 0, duration: capture ? 1500 : 760, ease: "Cubic.easeOut", onComplete: () => { label.destroy(); finish(); } });
+          this.burst(position, color, superLight ? 48 : chest ? 32 : capture ? 26 : gathering ? 16 : lighting ? 14 : 11, superLight ? 128 : chest ? 95 : capture ? 78 : gathering ? 48 : lighting ? 43 : 36);
+          this.tweens.add({ targets: ring, scale: superLight ? 20 : chest ? 15 : capture ? 13 : gathering ? 8 : lighting ? 6.8 : 5.2, alpha: 0, duration: superLight ? 1700 : chest ? 1450 : capture ? 1280 : gathering ? 900 : lighting ? 720 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
+          this.tweens.add({ targets: label, y: position.y - (superLight ? 80 : capture ? 62 : 32), alpha: 0, duration: superLight ? 2100 : chest ? 1700 : capture ? 1500 : 760, ease: "Cubic.easeOut", onComplete: () => { label.destroy(); finish(); } });
           if (!reduced) {
-            this.cameras.main.shake(capture ? 120 : 60, capture ? 0.0025 : 0.0015);
-            if (capture) this.cameras.main.flash(95, 255, 224, 123, false);
+            this.cameras.main.shake(superLight ? 210 : capture ? 120 : 60, superLight ? 0.005 : capture ? 0.0025 : 0.0015);
+            if (capture || superLight) this.cameras.main.flash(superLight ? 180 : 95, 255, 224, 123, false);
           }
           if (capture || gathering) {
             [120, 250].forEach((delay, index) => this.time.delayedCall(delay, () => {
@@ -217,7 +220,10 @@ export function BattleMap({
             lightPlayer();
           }
         };
-        if (e.kind === "attack") {
+        if (superLight || chest) {
+          const beam = this.add.rectangle(position.x, -20, 14, 44, color, 0.9).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: beam, y: position.y, scaleX: superLight ? 8 : 5, scaleY: superLight ? 20 : 14, alpha: 0, duration: reduced ? 1 : superLight ? 900 : 700, ease: "Quad.easeIn", onComplete: () => { beam.destroy(); explode(); } });
+        } else if (e.kind === "attack") {
           const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
           const start = { x: position.x + Math.cos(angle) * 170, y: position.y + Math.sin(angle) * 170 };
           const comet = this.add.circle(start.x, start.y, 5, 0xfff4ab, 1).setStrokeStyle(1.5, 0xffffff, 0.9);
@@ -259,23 +265,28 @@ export function BattleMap({
             const lit = Boolean(t?.owner);
             const progress = Phaser.Math.Clamp(1 - (t?.hp ?? s.settings.hp) / s.settings.hp, 0, 1);
             // Unlit provinces brighten gradually with each viewer comment.
-            const unlit = Phaser.Display.Color.IntegerToColor(0x10294a);
-            const warm = Phaser.Display.Color.IntegerToColor(0xe6a51f);
+            const palette = s.settings.map === "cyber-grid"
+              ? { unlit: 0x071d35, warm: 0x08cfe9, lit: 0x30f5dc, line: 0x2f9aba, bright: 0xc8ffff }
+              : s.settings.map === "imperial-atlas"
+                ? { unlit: 0x211920, warm: 0xd14c20, lit: 0xffb326, line: 0x8a4035, bright: 0xffe4a3 }
+                : { unlit: 0x10294a, warm: 0xe6a51f, lit: 0xffc83d, line: 0x4e7196, bright: 0xfff5a8 };
+            const unlit = Phaser.Display.Color.IntegerToColor(palette.unlit);
+            const warm = Phaser.Display.Color.IntegerToColor(palette.warm);
             const lerp = (from: number, to: number) => Math.round(from + (to - from) * progress);
-            const fillColor = lit ? 0xffc83d : Phaser.Display.Color.GetColor(
+            const fillColor = lit ? palette.lit : Phaser.Display.Color.GetColor(
               lerp(unlit.red, warm.red),
               lerp(unlit.green, warm.green),
               lerp(unlit.blue, warm.blue),
             );
             graphics.fillStyle(fillColor, lit ? 0.96 : 0.88 + progress * 0.08);
-            graphics.lineStyle(lit ? 5 : 1 + progress * 2.2, lit ? 0xffbd32 : 0x4e7196, lit ? 0.18 : 0.72 + progress * 0.2);
+            graphics.lineStyle(lit ? 5 : 1 + progress * 2.2, lit ? palette.warm : palette.line, lit ? 0.18 : 0.72 + progress * 0.2);
             for (const polygon of p.polygons) {
               const points = polygon[0].map(project);
               graphics.fillPoints(points, true);
               graphics.strokePoints(points, true);
             }
             if (lit) {
-              graphics.lineStyle(1.15, 0xfff5a8, 0.96);
+              graphics.lineStyle(1.15, palette.bright, 0.96);
               for (const polygon of p.polygons)
                 graphics.strokePoints(polygon[0].map(project), true);
             }

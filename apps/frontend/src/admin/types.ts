@@ -41,6 +41,7 @@ export type AdminPanelProps = {
   setCount: Setter<number>;
   send: (type: LiveEvent["type"]) => Promise<void>;
   burst: () => Promise<void>;
+  superLight: (province: string) => Promise<void>;
   startMatch: () => Promise<void>;
   endMatch: () => Promise<void>;
   chooseMap: (map: Settings["map"]) => Promise<void>;

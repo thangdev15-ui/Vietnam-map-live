@@ -31,6 +31,7 @@ export class GameEngine {
       feed: [],
       effects: [],
       processed: 0,
+      chestsUnlocked: [],
     };
   }
   start(now = Date.now()) {
@@ -43,6 +44,7 @@ export class GameEngine {
       team: null,
       history: [],
       combo: 0,
+      comboAt: undefined,
     }));
     this.state.phase = "running";
     this.state.endsAt = now + this.state.settings.duration * 1000;
@@ -62,6 +64,7 @@ export class GameEngine {
       team: null,
       history: [],
       combo: 0,
+      comboAt: undefined,
     }));
     this.state.phase = "voting";
     this.state.voting = {
@@ -145,6 +148,21 @@ export class GameEngine {
     this.state.phase = "running";
     this.log("Trận đấu tiếp tục");
     return "running";
+  }
+  triggerSuperLight(provinceId: string, power = this.state.settings.attack * 3, playerName = "COMMAND CENTER") {
+    if (this.state.phase !== "running") return "Trận chưa chạy";
+    const province = this.provinces.find((item) => item.id === provinceId);
+    if (!province) return "Không tìm thấy tỉnh";
+    const event: LiveEvent = {
+      id: randomUUID(), source: "demo", type: "gift", userId: `system:${playerName}`,
+      username: playerName, text: "", count: 1,
+    };
+    const player = this.player(event);
+    player.team ??= "gold";
+    player.target = provinceId;
+    const territory = this.state.territories.find((item) => item.id === provinceId)!;
+    this.rememberContributor(territory, player);
+    return this.superLight(player, Math.min(100000, power), event.id);
   }
   player(e: LiveEvent): Player {
     let p = this.state.players.find((p) => p.id === e.userId);
@@ -245,6 +263,8 @@ export class GameEngine {
           (g.id === e.giftId || norm(g.name) === norm(e.giftName ?? "")),
       );
       if (!gift) return "Quà chưa được ánh xạ";
+      if (gift.skill === "super")
+        return this.superLight(p, Math.min(100000, gift.power * e.count), e.id);
       return this.act(
         p,
         gift.skill,
@@ -290,7 +310,7 @@ export class GameEngine {
   ) {
     const power = Math.max(1, Math.round(this.state.settings.attack / 5));
     player.score += power;
-    player.combo++;
+    this.bumpCombo(player);
     player.history.unshift(`cùng thắp ${territory.id} +${power}`);
     player.history.length = Math.min(30, player.history.length);
     this.log(
@@ -327,6 +347,7 @@ export class GameEngine {
       return "Chỉ phòng thủ tỉnh cùng phe";
     if (skill === "attack" && t.owner === p.team) return "Tỉnh đã thuộc phe";
     let kind: string = visualKind ?? skill;
+    let captured = false;
     if (skill === "heal") {
       power = Math.min(power, s.hp - t.hp);
       t.hp += power;
@@ -340,13 +361,14 @@ export class GameEngine {
         t.owner = p.team;
         t.hp = s.hp;
         kind = "capture";
+        captured = true;
         this.log(
           `${p.name} thắp sáng ${this.provinces.find((x) => x.id === t!.id)?.name}`,
         );
       }
     }
     p.score += power;
-    p.combo++;
+    this.bumpCombo(p);
     p.history.unshift(`${skill} ${t.id} +${power}`);
     p.history.length = Math.min(30, p.history.length);
     this.state.effects.push({
@@ -359,6 +381,7 @@ export class GameEngine {
       avatar: p.avatar,
     });
     this.state.effects = this.state.effects.slice(-30);
+    if (captured) this.unlockChest(t.id, p.name);
     if (
       (this.state.territories.filter((t) => t.owner === p.team).length /
         this.state.territories.length) *
@@ -367,5 +390,37 @@ export class GameEngine {
     )
       this.finish();
     return kind;
+  }
+  private bumpCombo(player: Player, now = Date.now()) {
+    player.combo = !player.comboAt || now - player.comboAt > 10_000 ? 1 : player.combo + 1;
+    player.comboAt = now;
+  }
+  private unlockChest(provinceId: string, player: string) {
+    const lit = this.state.territories.filter((territory) => territory.owner).length;
+    const milestone = [5, 10, 20, Math.ceil(this.state.territories.length / 2), this.state.territories.length]
+      .find((value) => value === lit && !(this.state.chestsUnlocked ?? []).includes(value));
+    if (!milestone) return;
+    this.state.chestsUnlocked = [...(this.state.chestsUnlocked ?? []), milestone];
+    this.state.effects.push({ id: randomUUID(), province: provinceId, team: "gold", kind: "chest", power: milestone, player });
+    this.state.effects = this.state.effects.slice(-30);
+    this.log(`Rương ánh sáng mốc ${milestone} tỉnh đã mở`);
+  }
+  private superLight(player: Player, power: number, id: string) {
+    const territory = this.state.territories.find((item) => item.id === player.target);
+    if (!territory) return "Chọn mục tiêu bằng bình luận trước";
+    territory.hp -= power;
+    let captured = false;
+    if (territory.hp <= 0) {
+      territory.owner = player.team;
+      territory.hp = this.state.settings.hp;
+      captured = true;
+    }
+    player.score += power;
+    this.bumpCombo(player);
+    this.state.effects.push({ id, province: territory.id, team: player.team!, kind: "super", power, player: player.name, avatar: player.avatar });
+    this.state.effects = this.state.effects.slice(-30);
+    this.log(`${player.name} kích hoạt SIÊU THẮP SÁNG tại ${this.provinces.find((item) => item.id === territory.id)?.name}`);
+    if (captured) this.unlockChest(territory.id, player.name);
+    return "super";
   }
 }

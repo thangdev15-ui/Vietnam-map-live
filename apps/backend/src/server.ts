@@ -20,12 +20,19 @@ import { Store } from "./database";
 import { Processor } from "./processor";
 export function createApp(token: string, dbPath: string) {
   const store = new Store(dbPath);
-  const settings = settingsSchema.parse(store.get("settings") ?? defaults);
-  const load = (name: string) =>
+  const rawSettings = store.get<Record<string, unknown>>("settings");
+  // Previous releases stored the geographic asset as `map`. Keep their game
+  // settings, but migrate them to the first visual battlefield automatically.
+  if (rawSettings && (rawSettings.map === "historical63" || rawSettings.map === "merged34")) {
+    rawSettings.map = "war-room";
+    rawSettings.activeMaps = ["war-room", "cyber-grid", "imperial-atlas"];
+  }
+  const settings = settingsSchema.parse(rawSettings ?? defaults);
+  const load = () =>
     JSON.parse(
-      readFileSync(resolve("assets/maps", name + ".json"), "utf8"),
+      readFileSync(resolve("assets/maps", "historical63.json"), "utf8"),
     ) as Province[];
-  let engine = new GameEngine(load(settings.map), settings);
+  let engine = new GameEngine(load(), settings);
   const saved = store.get<State>("state");
   if (saved && saved.settings.map === settings.map) {
     engine.state = saved;
@@ -53,7 +60,7 @@ export function createApp(token: string, dbPath: string) {
   const activateMap = (map: typeof settings.map) => {
     const banned = engine.state.players.filter((player) => player.blocked);
     const selectedSettings = { ...engine.state.settings, map };
-    engine = new GameEngine(load(map), selectedSettings);
+    engine = new GameEngine(load(), selectedSettings);
     engine.state.players = banned;
     processor.engine = engine;
     engine.start();
@@ -159,7 +166,7 @@ export function createApp(token: string, dbPath: string) {
     r.json({ ok: true });
   });
   app.post("/api/admin/choose-map", (q, r) => {
-    const { map } = z.object({ map: z.enum(["historical63", "merged34"]) }).parse(q.body);
+    const { map } = z.object({ map: z.enum(["war-room", "cyber-grid", "imperial-atlas"]) }).parse(q.body);
     const result = engine.chooseMap(map);
     if (result !== "vote_result") {
       r.status(409).json({ error: result });
@@ -194,6 +201,13 @@ export function createApp(token: string, dbPath: string) {
     store.set("state", engine.state);
     r.json({ ok: true });
   });
+  app.post("/api/admin/super-light", (q, r) => {
+    const { province, power } = z.object({ province: z.string().min(1).max(100), power: z.number().min(1).max(100000).optional() }).parse(q.body);
+    const result = engine.triggerSuperLight(province, power);
+    if (result !== "super") return r.status(409).json({ error: result });
+    store.set("state", engine.state);
+    r.json({ ok: true });
+  });
   app.post("/api/admin/settings", (q, r) => {
     if (engine.state.phase === "running") {
       r.status(409).json({ error: "Kết thúc trận trước khi thay đổi luật" });
@@ -201,7 +215,7 @@ export function createApp(token: string, dbPath: string) {
     }
     const s = settingsSchema.parse(q.body);
     const banned = engine.state.players.filter((p) => p.blocked);
-    engine = new GameEngine(load(s.map), s);
+    engine = new GameEngine(load(), s);
     engine.state.players = banned;
     processor.engine = engine;
     store.set("settings", s);

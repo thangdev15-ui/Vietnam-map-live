@@ -1,4 +1,5 @@
 import type { AdminPanelProps } from "./types";
+import { useState } from "react";
 export function Simulator({
   state,
   viewer,
@@ -11,6 +12,7 @@ export function Simulator({
   setCount,
   send,
   burst,
+  superLight,
   busy,
   demoWave,
   demoTotal,
@@ -27,10 +29,12 @@ export function Simulator({
   | "setCount"
   | "send"
   | "burst"
+  | "superLight"
   | "busy"
   | "demoWave"
   | "demoTotal"
 >) {
+  const [target, setTarget] = useState("ha-noi");
   return (
     <section>
       <span className="badge">DEMO • không kết nối TikTok</span>
@@ -93,6 +97,13 @@ export function Simulator({
             <i style={{ width: `${(demoWave / demoTotal) * 100}%` }} />
           </div>
         )}
+      </div>
+      <div className="quick-commands">
+        <span>Admin event:</span>
+        <input aria-label="ID tỉnh cho siêu thắp sáng" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="ha-noi" />
+        <button className="secondary" disabled={Boolean(busy)} onClick={() => superLight(target)}>
+          ☄ Kích hoạt siêu thắp sáng
+        </button>
       </div>
     </section>
   );

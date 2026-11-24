@@ -53,6 +53,7 @@ export function Gifts({
             <option value="attack">Tấn công</option>
             <option value="heal">Hồi phục</option>
             <option value="boost">Tiếp viện phe</option>
+            <option value="super">Siêu thắp sáng</option>
           </select>
           <label>
             <input

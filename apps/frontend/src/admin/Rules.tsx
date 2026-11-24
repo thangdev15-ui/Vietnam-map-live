@@ -10,7 +10,7 @@ export function Rules({
       <h2>Thông số trận tiếp theo</h2>
       <div className="form-grid">
         <label>
-          Bản đồ
+          Giao diện chiến trường mặc định
           <select
             value={settings.map}
             onChange={(e) =>
@@ -20,8 +20,9 @@ export function Rules({
               })
             }
           >
-            <option value="historical63">63 tỉnh • lịch sử</option>
-            <option value="merged34">34 vùng • gộp dữ liệu lịch sử</option>
+            <option value="war-room">War Room • ánh vàng</option>
+            <option value="cyber-grid">Cyber Network • cyan</option>
+            <option value="imperial-atlas">Imperial Atlas • hắc kim</option>
           </select>
         </label>
         {(
@@ -38,9 +39,9 @@ export function Rules({
         ).map(([k, l]) => numeric(k, l))}
       </div>
       <label className="map-options">
-        Bản đồ cho phép bình chọn
+        Giao diện chiến trường cho phép bình chọn
         <span>
-          {(["historical63", "merged34"] as const).map((map) => (
+          {(["war-room", "cyber-grid", "imperial-atlas"] as const).map((map) => (
             <button
               type="button"
               className={settings.activeMaps.includes(map) ? "selected" : "secondary"}
@@ -52,7 +53,7 @@ export function Rules({
                 if (activeMaps.length) setSettings({ ...settings, activeMaps });
               }}
             >
-              {map === "historical63" ? "MAP 1 · 63 tỉnh" : "MAP 2 · 34 vùng"}
+              {map === "war-room" ? "MAP 1 · War Room" : map === "cyber-grid" ? "MAP 2 · Cyber Network" : "MAP 3 · Imperial Atlas"}
             </button>
           ))}
         </span>

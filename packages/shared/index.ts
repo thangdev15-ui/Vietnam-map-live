@@ -13,10 +13,13 @@ export const teamSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   keyword: z.string().min(1).max(40),
 });
-export const mapSchema = z.enum(["historical63", "merged34"]);
+// Every arena uses the same verified 63-province geometry. These IDs choose
+// the live show's visual battlefield treatment, never a different geography.
+export const mapSchema = z.enum(["war-room", "cyber-grid", "imperial-atlas"]);
 export const mapCatalog = {
-  historical63: { id: "historical63", name: "VIỆT NAM 63", keyword: "1", description: "63 tỉnh, thành lịch sử" },
-  merged34: { id: "merged34", name: "VIỆT NAM 34", keyword: "2", description: "34 tỉnh, thành hiện tại" },
+  "war-room": { id: "war-room", name: "WAR ROOM", keyword: "1", description: "Bàn chỉ huy chiến lược ánh vàng" },
+  "cyber-grid": { id: "cyber-grid", name: "CYBER NETWORK", keyword: "2", description: "Mạng năng lượng cyan tương lai" },
+  "imperial-atlas": { id: "imperial-atlas", name: "IMPERIAL ATLAS", keyword: "3", description: "Đế chế hắc kim và hỏa quang" },
 } as const;
 export const settingsSchema = z
   .object({
@@ -44,14 +47,14 @@ export const settingsSchema = z
         z.object({
           id: z.string().min(1).max(80),
           name: z.string().max(80),
-          skill: z.enum(["attack", "heal", "boost"]),
+          skill: z.enum(["attack", "heal", "boost", "super"]),
           power: z.number().min(1).max(10000),
           enabled: z.boolean(),
         }),
       )
       .max(200),
     map: mapSchema,
-    activeMaps: z.array(mapSchema).min(1).max(2).default(["historical63", "merged34"]),
+    activeMaps: z.array(mapSchema).min(1).max(3).default(["war-room", "cyber-grid", "imperial-atlas"]),
     votingDuration: z.number().int().min(10).max(120).default(30),
   })
   .superRefine((s, c) => {
@@ -83,8 +86,8 @@ export const defaults: Settings = {
   gifts: [
     { id: "rose", name: "Rose", skill: "attack", power: 40, enabled: true },
   ],
-  map: "historical63",
-  activeMaps: ["historical63", "merged34"],
+  map: "war-room",
+  activeMaps: ["war-room", "cyber-grid", "imperial-atlas"],
   votingDuration: 30,
 };
 export const eventSchema = z.object({
@@ -121,6 +124,7 @@ export type Player = {
   blocked: boolean;
   history: string[];
   combo: number;
+  comboAt?: number;
   avatar?: string;
 };
 export type Effect = {
@@ -152,5 +156,6 @@ export type State = {
   feed: string[];
   effects: Effect[];
   processed: number;
+  chestsUnlocked?: number[];
   voting?: Voting;
 };

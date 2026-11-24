@@ -101,6 +101,11 @@ export function Admin({
     );
   const pauseMatch = () => run(() => api("pause", token, {}), "Ⅱ Trận đã tạm dừng.", "pause");
   const resumeMatch = () => run(() => api("resume", token, {}), "▶ Trận đã tiếp tục.", "resume");
+  const superLight = (province: string) => run(
+    () => api("super-light", token, { province }),
+    "☄ Siêu thắp sáng đã được kích hoạt.",
+    "super-light",
+  );
   const endMatch = () =>
     run(
       async () => {
@@ -349,6 +354,7 @@ export function Admin({
             setCount={setCount}
             send={send}
             burst={burst}
+            superLight={superLight}
             busy={busy}
             demoWave={demoWave}
             demoTotal={demoTotal}

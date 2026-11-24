@@ -49,6 +49,16 @@ describe("Game rules", () => {
       expect.arrayContaining([expect.objectContaining({ name: "Người cùng thắp" })]),
     );
   });
+  it("runs a super-light gift as a real gameplay effect", () => {
+    const settings = structuredClone(defaults);
+    settings.gifts = [{ id: "super", name: "Super", skill: "super", power: 100, enabled: true }];
+    const g = new GameEngine(map, settings);
+    g.start();
+    g.apply(event("hà nội"));
+    expect(g.apply({ ...event(""), type: "gift", giftId: "super" })).toBe("super");
+    expect(g.state.territories[0].owner).toBe("gold");
+    expect(g.state.effects.some((effect) => effect.kind === "super")).toBe(true);
+  });
   it("captures province only after defense exhausted", () => {
     const g = game();
     g.apply(event("đỏ"));
@@ -116,11 +126,11 @@ describe("Game rules", () => {
     expect(g.apply({ ...event("1"), userId: "viewer-a" })).toBe("vote");
     expect(g.apply({ ...event("2"), userId: "viewer-a" })).toBe("Đã bình chọn");
     expect(g.apply({ ...event("không hợp lệ"), userId: "viewer-b" })).toBe("Bình luận không phải lựa chọn bản đồ");
-    expect(g.apply({ ...event("historical63"), userId: "viewer-b" })).toBe("vote");
+    expect(g.apply({ ...event("war room"), userId: "viewer-b" })).toBe("vote");
     g.tick(30_000);
     expect(g.state.phase).toBe("vote_result");
-    expect(g.state.voting?.winner).toBe("historical63");
-    expect(g.tick(32_500)).toBe("historical63");
+    expect(g.state.voting?.winner).toBe("war-room");
+    expect(g.tick(32_500)).toBe("war-room");
   });
   it("does not randomly resolve a tied or empty map vote", () => {
     const tied = new GameEngine(map, structuredClone(defaults));
@@ -129,7 +139,7 @@ describe("Game rules", () => {
     tied.apply({ ...event("2"), userId: "viewer-b" });
     tied.tick(30_000);
     expect(tied.state.phase).toBe("voting_tie");
-    expect(tied.chooseMap("merged34", 30_000)).toBe("vote_result");
+    expect(tied.chooseMap("cyber-grid", 30_000)).toBe("vote_result");
 
     const empty = new GameEngine(map, structuredClone(defaults));
     empty.beginVoting(0);
