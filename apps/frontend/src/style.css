@@ -684,6 +684,12 @@ label select {
   isolation: isolate;
   container-type: inline-size;
 }
+/* Cinematic terrain broadcast: the generated terrain is a background layer;
+   Phaser still owns and draws the real 63 province polygons above it. */
+.portrait-live {
+  background: #020918 url("../../../assets/broadcast/vietnam-terrain-portrait.png") center 47% / cover no-repeat;
+}
+.portrait-live::after { content:""; position:absolute; inset:0; pointer-events:none; z-index:-1; background:linear-gradient(180deg,#020718dc 0%,transparent 19%,transparent 68%,#020512de 100%),radial-gradient(ellipse at 45% 44%,transparent 30%,#00102f99 93%); }
 .portrait-live::before {
   content: "";
   position: absolute;
@@ -706,13 +712,16 @@ label select {
 .portrait-header {
   min-height: 9.6vh;
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto auto auto;
   gap: 1.2vw;
   align-items: center;
   padding: max(12px, env(safe-area-inset-top)) 3.2% 8px;
-  background: linear-gradient(180deg, #010416e8, #040a2aaa);
+  background: linear-gradient(180deg, #010412f5, #07112dcc 82%, transparent);
   border-bottom: 1px solid #b88b2a6b;
 }
+.portrait-viewers { padding:5px 8px; border-radius:16px; background:#020817e8; border:1px solid #ffd35e57; color:#fff6ca; font-size:clamp(8px,1vw,13px); font-weight:900; white-space:nowrap; }
+.portrait-score { display:grid; grid-template-columns:auto auto; column-gap:3px; align-items:center; color:#fff0ab; font-weight:900; font-size:clamp(9px,1vw,13px); line-height:1; white-space:nowrap; }
+.portrait-score small { color:#cfdbed; font-size:6px; letter-spacing:.08em; }.portrait-score b { color:#ffd44c; font-size:clamp(11px,1.4vw,18px); }
 .portrait-live-badge {
   display: inline-flex;
   align-items: center;
@@ -740,9 +749,9 @@ label select {
 .portrait-progress b { color: var(--gold); }
 .portrait-track { height: clamp(5px, .75vw, 9px); margin-top: 7px; overflow:hidden; border-radius: 20px; background:#213e78; box-shadow: inset 0 1px 3px #000; }
 .portrait-track i { display:block; height:100%; border-radius:inherit; background: linear-gradient(90deg, #ffd44a, #fff6a7); box-shadow: 0 0 12px #ffe263; transition: width .45s ease; }
-.portrait-arena { position:relative; height: calc(100vh - 23vh); min-height: 470px; overflow:hidden; }
+.portrait-arena { position:relative; height: calc(100vh - 29vh); min-height: 300px; overflow:hidden; }
 .portrait-arena::after { content:""; position:absolute; inset:auto 3% 1% 3%; height:16%; background:radial-gradient(ellipse, #f6ad2d46, transparent 65%); pointer-events:none; }
-.portrait-arena .map-canvas { inset: 2.5% 2% 7%; z-index: 1; filter: drop-shadow(0 0 8px #59b6ff68) drop-shadow(0 0 22px #f4bd4359); }
+.portrait-arena .map-canvas { inset: 3% 18% 6% 1%; z-index: 1; filter: drop-shadow(0 0 10px #ffe47e88) drop-shadow(0 0 34px #f4bd4375); mix-blend-mode:screen; }
 .portrait-arena .map-canvas canvas { width:100% !important; height:100% !important; }
 .portrait-map-glow { position:absolute; inset: 13% 12% 12%; z-index: 0; border-radius:50%; background:radial-gradient(ellipse, #ffd54b40, #2e71d638 37%, transparent 68%); filter: blur(14px); animation: mapBreath 4.5s ease-in-out infinite; }
 .portrait-province-chip { position:absolute; z-index:3; left:4%; top:4%; display:grid; grid-template-columns:auto 1fr; column-gap:6px; align-items:center; padding:7px 9px; max-width:40%; border:1px solid #f5ca5a9e; border-radius:7px; background:#08133ee8; box-shadow:0 5px 18px #0009; }
@@ -754,6 +763,9 @@ label select {
 .portrait-province-chip b { font-size:clamp(9px,1.2vw,15px); }
 .portrait-province-chip small { color:#bed1ef; font-size:clamp(7px,.9vw,11px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .portrait-side-panel { position:absolute; z-index:3; top:4%; right:3%; width:30%; display:grid; gap:8px; }
+.cinematic-style-strip { position:absolute; z-index:5; display:flex; gap:8px; left:3%; top:3%; }
+.cinematic-style-strip > div { display:grid; justify-items:center; gap:3px; width:clamp(42px,7.4vw,88px); padding:4px 3px 5px; border:1px solid #ffe39d88; border-radius:8px; color:#e9edf6; background:#071126d9; box-shadow:0 5px 14px #0009; font-weight:900; font-size:clamp(6px,.82vw,10px); }
+.cinematic-style-strip i { display:grid; place-items:center; width:100%; aspect-ratio:1.55; border-radius:5px; background:linear-gradient(145deg,#426b40,#131f35 62%); font-size:clamp(14px,2vw,25px); font-style:normal; }.cinematic-style-strip > div.active { border-color:#ffe265; color:#ffdf58; box-shadow:0 0 0 2px #ffbd292d,0 0 20px #ffbb3194; }
 .map-vote-overlay { position:absolute; z-index:7; left:50%; top:47%; width:min(68%,620px); padding:clamp(12px,2vw,24px); border:1px solid #ffe277; border-radius:15px; text-align:center; background:linear-gradient(145deg,#07174df2,#122b70ee 58%,#08123bf2); box-shadow:0 0 0 5px #ffe15b26,0 20px 70px #000c,inset 0 0 38px #568aff3d; transform:translate(-50%,-50%); animation:voteReveal .55s cubic-bezier(.16,.87,.31,1.2); }
 .vote-kicker { color:#89baff; font-size:clamp(7px,.85vw,11px); font-weight:900; letter-spacing:.16em; }
 .map-vote-overlay > strong { display:block; margin-top:3px; color:#fff5b2; font-size:clamp(16px,2.4vw,30px); letter-spacing:-.04em; }
@@ -781,7 +793,7 @@ label select {
 .portrait-completion p { display:grid; grid-template-columns:30px 1fr auto; gap:8px; margin:0; padding:5px 9px; border-radius:5px; background:#1c1509a8; color:#fff4c3; font-size:clamp(8px,1vw,12px); text-align:left; }
 .portrait-completion p b { color:#ffe174; }.portrait-completion p i { overflow:hidden; font-style:normal; white-space:nowrap; text-overflow:ellipsis; }.portrait-completion p em { color:#72efe0; font-style:normal; font-weight:900; }
 @keyframes voteReveal { from { opacity:0; transform:translate(-50%,-43%) scale(.84); filter:blur(4px); } to { opacity:1; transform:translate(-50%,-50%) scale(1); filter:blur(0); } }
-.portrait-card { padding:8px; border:1px solid #ca9d3e80; border-radius:8px; background:linear-gradient(135deg,#091750f2,#030a2cea); box-shadow:0 7px 18px #0009; }
+.portrait-card { padding:8px; border:1px solid #f1bb488f; border-radius:10px; background:linear-gradient(135deg,#06183eea,#020718e8); box-shadow:0 7px 18px #0009, inset 0 1px #fff0a526; }
 .portrait-card small { display:block; color:var(--gold); font-weight:900; font-size:clamp(7px,.9vw,11px); line-height:1.25; }
 .conqueror-card p { margin:5px 0 0; color:#fff8d4; font-weight:800; font-size:clamp(8px,1.05vw,13px); line-height:1.32; }
 .portrait-rank { display:grid; grid-template-columns:16px 1fr auto; gap:4px; align-items:center; padding:5px 0; border-bottom:1px solid #6982af4a; font-size:clamp(7px,.95vw,12px); }

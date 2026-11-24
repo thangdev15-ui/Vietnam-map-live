@@ -26,6 +26,7 @@ function PortraitBroadcast({
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
   const voteSeconds = Math.max(0, Math.ceil(((state.voting?.endsAt ?? Date.now()) - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
+  const totalScore = state.players.reduce((sum, player) => sum + player.score, 0);
   const leader = state.players[0];
   const comboPlayer = state.players
     .filter((player) => player.combo >= state.settings.comboThreshold)
@@ -72,6 +73,7 @@ function PortraitBroadcast({
     <main className={`portrait-live theme-${state.settings.map}`} aria-label="Màn hình phát TikTok dọc">
       <header className="portrait-header">
         <div className="portrait-live-badge"><i /> LIVE</div>
+        <div className="portrait-viewers">◉ {state.players.length || "12.5"}K</div>
         <div className="portrait-title">
           <span>VIỆT NAM ĐẠI CHIẾN</span>
           <strong>THẮP SÁNG BẢN ĐỒ VIỆT NAM</strong>
@@ -81,6 +83,7 @@ function PortraitBroadcast({
             ? `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`
             : "SẴN SÀNG"}
         </div>
+        <div className="portrait-score">🎁 <small>TỔNG ĐIỂM</small><b>{totalScore.toLocaleString("vi-VN")}</b></div>
         <div className="portrait-audio">
           <button onClick={enableAudio} className={audioEnabled ? "active" : ""}>
             {audioEnabled
@@ -97,6 +100,13 @@ function PortraitBroadcast({
 
       <section className="portrait-arena">
         <div className="portrait-map-glow" />
+        <div className="cinematic-style-strip" aria-label="Chế độ bản đồ hiện tại">
+          {[
+            ["war-room", "🏔", "Địa hình 3D"],
+            ["cyber-grid", "🛰", "Vệ tinh"],
+            ["imperial-atlas", "♜", "Chiến thuật"],
+          ].map(([id, icon, label]) => <div key={id} className={state.settings.map === id ? "active" : ""}><i>{icon}</i><span>{label}</span></div>)}
+        </div>
         <BattleMap provinces={provinces} state={state} onSelect={setSelected} />
         {comboPlayer && (
           <div className="portrait-combo" aria-live="polite">

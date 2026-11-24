@@ -21,6 +21,7 @@ export function BattleMap({
   latest.current = state;
   selected.current = onSelect;
   useEffect(() => {
+    const cinematic = new URLSearchParams(window.location.search).get("broadcast") === "1";
     const seen = new Set<string>();
     let graphics: Phaser.GameObjects.Graphics;
     let markers: Phaser.GameObjects.Container;
@@ -282,15 +283,15 @@ export function BattleMap({
               lerp(unlit.green, warm.green),
               lerp(unlit.blue, warm.blue),
             );
-            graphics.fillStyle(fillColor, lit ? 0.96 : 0.88 + progress * 0.08);
-            graphics.lineStyle(lit ? 5 : 1 + progress * 2.2, lit ? palette.warm : palette.line, lit ? 0.18 : 0.72 + progress * 0.2);
+            graphics.fillStyle(fillColor, cinematic ? (lit ? 0.76 : 0.12 + progress * 0.16) : (lit ? 0.96 : 0.88 + progress * 0.08));
+            graphics.lineStyle(cinematic ? (lit ? 3.4 : 1.25 + progress) : (lit ? 5 : 1 + progress * 2.2), cinematic ? 0xffd76a : (lit ? palette.warm : palette.line), cinematic ? (lit ? 1 : 0.72) : (lit ? 0.18 : 0.72 + progress * 0.2));
             for (const polygon of p.polygons) {
               const points = polygon[0].map(project);
               graphics.fillPoints(points, true);
               graphics.strokePoints(points, true);
             }
             if (lit) {
-              graphics.lineStyle(1.15, palette.bright, 0.96);
+              graphics.lineStyle(cinematic ? 2.1 : 1.15, palette.bright, 0.96);
               for (const polygon of p.polygons)
                 graphics.strokePoints(polygon[0].map(project), true);
             }
