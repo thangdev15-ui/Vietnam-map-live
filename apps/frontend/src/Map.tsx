@@ -23,6 +23,7 @@ const polygonPath = (polygon: number[][][]) => polygon.map(ringPath).join(" ");
  * source of Vietnam's shape, province boundaries, and all lighting masks.
  */
 function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: State }) {
+  if (state.settings.map !== "cyber-grid") return null;
   const prefix = useRef(`province-terrain-${Math.random().toString(36).slice(2)}`).current;
   const territoryById = new Map(state.territories.map((territory) => [territory.id, territory]));
   return (
@@ -321,14 +322,39 @@ export function BattleMap({
       }
       update() {
         const s = latest.current;
-        const key = JSON.stringify(s.territories);
+        const key = JSON.stringify([s.settings.map, s.territories]);
         if (key !== previous) {
           previous = key;
           graphics.clear();
-          // Province surfaces, boundaries and their steady lighting are SVG
-          // clipped by ProvinceTerrain. Do not redraw a second map on Phaser:
-          // its responsive canvas scale could create a visibly offset outline.
-          // Phaser remains the interaction and transient-effects layer.
+          if (s.settings.map !== "cyber-grid") {
+            // Map 1: the original clean tactical Vietnam view. It is kept
+            // separate from Map 2's terrain material, while using the same
+            // exact province geometry, state and interactions.
+            for (const p of provinces) {
+              const territory = s.territories.find((item) => item.id === p.id);
+              const lit = Boolean(territory?.owner);
+              const progress = Phaser.Math.Clamp(1 - (territory?.hp ?? s.settings.hp) / s.settings.hp, 0, 1);
+              const base = Phaser.Display.Color.IntegerToColor(0x10294a);
+              const warm = Phaser.Display.Color.IntegerToColor(0xe6a51f);
+              const lerp = (from: number, to: number) => Math.round(from + (to - from) * progress);
+              const fill = lit ? 0xffc83d : Phaser.Display.Color.GetColor(
+                lerp(base.red, warm.red),
+                lerp(base.green, warm.green),
+                lerp(base.blue, warm.blue),
+              );
+              graphics.fillStyle(fill, lit ? 0.96 : 0.88 + progress * 0.08);
+              graphics.lineStyle(lit ? 4.4 : 1 + progress * 2.2, lit ? 0xe6a51f : 0x4e7196, lit ? 0.82 : 0.72 + progress * 0.2);
+              for (const polygon of p.polygons) {
+                const points = polygon[0].map(project);
+                graphics.fillPoints(points, true);
+                graphics.strokePoints(points, true);
+              }
+              if (lit) {
+                graphics.lineStyle(1.15, 0xfff5a8, 0.96);
+                for (const polygon of p.polygons) graphics.strokePoints(polygon[0].map(project), true);
+              }
+            }
+          }
         }
         this.refreshMarkers(s);
         if (!effectsReady) {

@@ -17,9 +17,9 @@ export const teamSchema = z.object({
 // the live show's visual battlefield treatment, never a different geography.
 export const mapSchema = z.enum(["war-room", "cyber-grid", "imperial-atlas"]);
 export const mapCatalog = {
-  "war-room": { id: "war-room", name: "WAR ROOM", keyword: "1", description: "Bàn chỉ huy chiến lược ánh vàng" },
-  "cyber-grid": { id: "cyber-grid", name: "CYBER NETWORK", keyword: "2", description: "Mạng năng lượng cyan tương lai" },
-  "imperial-atlas": { id: "imperial-atlas", name: "IMPERIAL ATLAS", keyword: "3", description: "Đế chế hắc kim và hỏa quang" },
+  "war-room": { id: "war-room", name: "BẢN ĐỒ MẶC ĐỊNH", keyword: "1", description: "Bản đồ Việt Nam đơn sắc" },
+  "cyber-grid": { id: "cyber-grid", name: "BẢN ĐỒ ĐỊA HÌNH", keyword: "2", description: "Địa hình texture theo từng tỉnh" },
+  "imperial-atlas": { id: "imperial-atlas", name: "MAP 3 · ĐANG HOÀN THIỆN", keyword: "3", description: "Chưa bật bình chọn" },
 } as const;
 export const settingsSchema = z
   .object({
@@ -54,7 +54,7 @@ export const settingsSchema = z
       )
       .max(200),
     map: mapSchema,
-    activeMaps: z.array(mapSchema).min(1).max(3).default(["war-room", "cyber-grid", "imperial-atlas"]),
+    activeMaps: z.array(mapSchema).min(1).max(3).default(["war-room", "cyber-grid"]),
     votingDuration: z.number().int().min(10).max(120).default(30),
     comboWindow: z.number().int().min(2).max(60).default(10),
     comboThreshold: z.number().int().min(2).max(20).default(3),
@@ -91,7 +91,7 @@ export const defaults: Settings = {
     { id: "rose", name: "Rose", skill: "attack", power: 40, enabled: true },
   ],
   map: "war-room",
-  activeMaps: ["war-room", "cyber-grid", "imperial-atlas"],
+  activeMaps: ["war-room", "cyber-grid"],
   votingDuration: 30,
   comboWindow: 10,
   comboThreshold: 3,

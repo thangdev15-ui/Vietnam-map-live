@@ -20,9 +20,8 @@ export function Rules({
               })
             }
           >
-            <option value="war-room">War Room • ánh vàng</option>
-            <option value="cyber-grid">Cyber Network • cyan</option>
-            <option value="imperial-atlas">Imperial Atlas • hắc kim</option>
+            <option value="war-room">Map 1 • Mặc định</option>
+            <option value="cyber-grid">Map 2 • Địa hình</option>
           </select>
         </label>
         {(
@@ -44,7 +43,7 @@ export function Rules({
       <label className="map-options">
         Giao diện chiến trường cho phép bình chọn
         <span>
-          {(["war-room", "cyber-grid", "imperial-atlas"] as const).map((map) => (
+          {(["war-room", "cyber-grid"] as const).map((map) => (
             <button
               type="button"
               className={settings.activeMaps.includes(map) ? "selected" : "secondary"}
@@ -56,7 +55,7 @@ export function Rules({
                 if (activeMaps.length) setSettings({ ...settings, activeMaps });
               }}
             >
-              {map === "war-room" ? "MAP 1 · War Room" : map === "cyber-grid" ? "MAP 2 · Cyber Network" : "MAP 3 · Imperial Atlas"}
+              {map === "war-room" ? "MAP 1 · Mặc định" : "MAP 2 · Địa hình"}
             </button>
           ))}
         </span>

@@ -17,6 +17,9 @@
 | TERRAIN-03 | Cắt texture theo từng tỉnh và thắp sáng bằng clip/mask đúng tỉnh | `Map.tsx` | Tỉnh sáng hiển thị phần terrain tương ứng; các tỉnh không lệch | COMPLETED |
 | TERRAIN-04 | Cảnh mới: flash, glow, vòng sáng và camera vẫn dùng đúng geometry | `Map.tsx` | Comment/gift vẫn focus và animation đúng tỉnh | IN_PROGRESS |
 | TERRAIN-05 | Kiểm tra ảnh overlay và luồng game | `docs/verification`, build/test | SVG overlay trùng khít texture map; không làm hỏng realtime | IN_PROGRESS |
+| VIEW-01 | Map 1 là view mặc định đơn sắc cũ của Việt Nam | `Map.tsx`, `shared` | Không đổi nền/HUD; map hiển thị bản đồ cũ | COMPLETED |
+| VIEW-02 | Map 2 là view terrain có texture theo từng tỉnh | `Map.tsx`, `shared` | Không đổi nền/HUD; texture chỉ xuất hiện trong 63 polygon | COMPLETED |
+| VIEW-03 | Bình chọn chỉ mở hai view đã có yêu cầu rõ ràng | `shared`, `server`, `Rules` | Chỉ hiện Map 1 và Map 2; state cũ Map 3 về Map 1 | COMPLETED |
 
 ## Broadcast và bản đồ
 

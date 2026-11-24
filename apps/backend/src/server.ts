@@ -25,7 +25,16 @@ export function createApp(token: string, dbPath: string) {
   // settings, but migrate them to the first visual battlefield automatically.
   if (rawSettings && (rawSettings.map === "historical63" || rawSettings.map === "merged34")) {
     rawSettings.map = "war-room";
-    rawSettings.activeMaps = ["war-room", "cyber-grid", "imperial-atlas"];
+    rawSettings.activeMaps = ["war-room", "cyber-grid"];
+  }
+  // Map 3 has no approved viewing design yet. Preserve the enum for old
+  // records, but only expose the two completed Vietnam viewing modes.
+  if (rawSettings) {
+    if (rawSettings.map === "imperial-atlas") rawSettings.map = "war-room";
+    if (Array.isArray(rawSettings.activeMaps))
+      rawSettings.activeMaps = rawSettings.activeMaps.filter((map) => map === "war-room" || map === "cyber-grid");
+    if (!Array.isArray(rawSettings.activeMaps) || rawSettings.activeMaps.length === 0)
+      rawSettings.activeMaps = ["war-room", "cyber-grid"];
   }
   const settings = settingsSchema.parse(rawSettings ?? defaults);
   const load = () =>
