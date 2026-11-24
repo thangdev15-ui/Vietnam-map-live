@@ -31,6 +31,7 @@ function PortraitBroadcast({
     .filter((player) => player.combo >= state.settings.comboThreshold)
     .sort((a, b) => b.combo - a.combo)[0];
   const latestEffect = state.effects.at(-1);
+  const mapCompleted = state.effects.some((effect) => effect.kind === "complete");
   const latestProvinceName = latestEffect
     ? provinces.find((p) => p.id === latestEffect.province)?.name
     : undefined;
@@ -137,6 +138,17 @@ function PortraitBroadcast({
             <span>{state.phase === "voting_tie" ? "BÌNH CHỌN HÒA" : "CHƯA CÓ PHIẾU"}</span>
             <strong>ĐANG CHỜ QUẢN TRỊ VIÊN CHỌN BẢN ĐỒ</strong>
             <small>Không tự chọn ngẫu nhiên.</small>
+          </section>
+        )}
+        {state.phase === "ended" && mapCompleted && (
+          <section className="portrait-completion" aria-live="assertive">
+            <span>✦ TOÀN BẢN ĐỒ BỪNG SÁNG ✦</span>
+            <strong>VIỆT NAM ĐÃ ĐƯỢC THẮP SÁNG</strong>
+            <div>
+              {state.players.slice(0, 3).map((player, index) => (
+                <p key={player.name}><b>#{index + 1}</b><i>{player.name}</i><em>{player.score}</em></p>
+              ))}
+            </div>
           </section>
         )}
         <div className="portrait-province-chip">

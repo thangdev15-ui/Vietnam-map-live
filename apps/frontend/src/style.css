@@ -774,6 +774,12 @@ label select {
 .map-vote-result strong { color:#fff8d1; font-size:clamp(15px,2.2vw,27px); }
 .map-vote-result small { color:#eadba5; font-size:clamp(7px,.85vw,10px); }
 .map-vote-result.unresolved { border-color:#a7c4ff; background:radial-gradient(circle at top,#173d80f3,#081536f5 70%); }
+.portrait-completion { position:absolute; z-index:9; left:50%; top:47%; display:grid; gap:6px; width:min(72%,560px); padding:22px; border:1px solid #fff1a6; border-radius:16px; text-align:center; background:radial-gradient(circle at top,#896313f6,#251602f6 66%,#0a0711f6); box-shadow:0 0 0 6px #ffe67135,0 24px 90px #000d,inset 0 0 40px #ffe7814b; transform:translate(-50%,-50%); animation:voteReveal .7s cubic-bezier(.16,.87,.31,1.2); }
+.portrait-completion > span { color:#ffe174; font-size:clamp(8px,.95vw,12px); font-weight:1000; letter-spacing:.13em; }
+.portrait-completion > strong { color:#fff9d4; font-size:clamp(16px,2.25vw,28px); }
+.portrait-completion > div { display:grid; gap:3px; margin-top:5px; }
+.portrait-completion p { display:grid; grid-template-columns:30px 1fr auto; gap:8px; margin:0; padding:5px 9px; border-radius:5px; background:#1c1509a8; color:#fff4c3; font-size:clamp(8px,1vw,12px); text-align:left; }
+.portrait-completion p b { color:#ffe174; }.portrait-completion p i { overflow:hidden; font-style:normal; white-space:nowrap; text-overflow:ellipsis; }.portrait-completion p em { color:#72efe0; font-style:normal; font-weight:900; }
 @keyframes voteReveal { from { opacity:0; transform:translate(-50%,-43%) scale(.84); filter:blur(4px); } to { opacity:1; transform:translate(-50%,-50%) scale(1); filter:blur(0); } }
 .portrait-card { padding:8px; border:1px solid #ca9d3e80; border-radius:8px; background:linear-gradient(135deg,#091750f2,#030a2cea); box-shadow:0 7px 18px #0009; }
 .portrait-card small { display:block; color:var(--gold); font-weight:900; font-size:clamp(7px,.9vw,11px); line-height:1.25; }

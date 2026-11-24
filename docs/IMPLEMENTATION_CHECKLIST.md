@@ -37,7 +37,7 @@
 | EVENT-02 | Ánh sáng lan tỏa có thể bật/tắt và chỉ là đồ họa | engine/map/admin | Không tự chiếm vùng lân cận | COMPLETED |
 | EVENT-03 | Rương ánh sáng ở mốc 5/10/20/50%/100% | `GameEngine`, `Map` | Mốc kích hoạt duy nhất, animation và log | COMPLETED |
 | EVENT-04 | Combo có timeout, thưởng, cấu hình admin, animation lớn | engine/map/admin | Combo hết hạn và có thưởng cấu hình được | COMPLETED |
-| EVENT-05 | Hoàn thành 100%: cinematic, top người chơi, lưu kết quả | engine/broadcast/store | Cảnh hoàn tất và match history đúng | IN_PROGRESS |
+| EVENT-05 | Hoàn thành 100%: cinematic, top người chơi, lưu kết quả | engine/broadcast/store | Cảnh hoàn tất và match history đúng | COMPLETED |
 
 ## Admin, realtime và độ tin cậy
 
