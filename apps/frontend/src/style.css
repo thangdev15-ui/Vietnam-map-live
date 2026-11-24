@@ -274,6 +274,8 @@ footer {
 .map-phaser-layer {
   z-index: 1;
 }
+.terrain-mode .map-phaser-layer { pointer-events: none; }
+.terrain-mode .province-terrain { z-index: 2; cursor: pointer; }
 .map-phaser-layer canvas {
   max-width: 100%;
   max-height: 100%;
@@ -281,6 +283,11 @@ footer {
 .terrain-lit-pulse { animation: terrainLitPulse 2.8s ease-in-out infinite; }
 .terrain-province image,
 .terrain-province rect { transition: opacity 720ms cubic-bezier(.2,.8,.2,1); }
+.terrain-event { pointer-events: none; }
+.terrain-event-ring { transform-box: fill-box; transform-origin: center; animation: terrainEventRing 1.2s cubic-bezier(.1,.7,.2,1) infinite; }
+.terrain-event-user { fill:#fff5c5; font-family:"Arial Black",sans-serif; font-size:11px; paint-order:stroke; stroke:#081233; stroke-width:4px; stroke-linejoin:round; }
+.terrain-event-score { fill:#ffe16f; font-family:"Arial Black",sans-serif; font-size:10px; paint-order:stroke; stroke:#081233; stroke-width:4px; stroke-linejoin:round; }
+@keyframes terrainEventRing { to { transform:scale(5); opacity:0; } }
 @keyframes terrainLitPulse { 50% { opacity: .28; } }
 .sea-label {
   position: absolute;

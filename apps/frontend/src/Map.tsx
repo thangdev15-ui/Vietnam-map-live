@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Phaser from "phaser";
 import type { Province, State } from "../../../packages/shared/index";
 import terrainSurface from "./assets/terrain-surface-v1.png";
@@ -22,12 +22,86 @@ const polygonPath = (polygon: number[][][]) => polygon.map(ringPath).join(" ");
  * continuous land material. The real province polygons below are the sole
  * source of Vietnam's shape, province boundaries, and all lighting masks.
  */
-function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: State }) {
-  if (state.settings.map !== "cyber-grid") return null;
+type TerrainCamera = { x: number; y: number; scale: number };
+
+function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]; state: State; onSelect: (id: string) => void }) {
+  const terrainMode = state.settings.map === "cyber-grid";
   const prefix = useRef(`province-terrain-${Math.random().toString(36).slice(2)}`).current;
+  const [camera, setCamera] = useState<TerrainCamera>({ x: 350, y: 410, scale: 1 });
+  const cameraRef = useRef(camera);
+  const frameRef = useRef<number | undefined>(undefined);
+  const resetRef = useRef<number | undefined>(undefined);
+  // State is delivered over Socket.IO. Track territory deltas rather than
+  // trusting a transient effect entry: this guarantees that camera + light
+  // target the province whose HP/owner actually changed.
+  const previousTerritories = useRef<Map<string, { hp: number; owner: string | null }> | undefined>(undefined);
+  const [event, setEvent] = useState<State["effects"][number]>();
   const territoryById = new Map(state.territories.map((territory) => [territory.id, territory]));
+  const moveCamera = (target: TerrainCamera, duration: number) => {
+    cancelAnimationFrame(frameRef.current ?? 0);
+    const start = cameraRef.current;
+    const began = performance.now();
+    const tick = (now: number) => {
+      const raw = Math.min(1, (now - began) / duration);
+      const ease = 1 - (1 - raw) ** 3;
+      const next = { x: start.x + (target.x - start.x) * ease, y: start.y + (target.y - start.y) * ease, scale: start.scale + (target.scale - start.scale) * ease };
+      cameraRef.current = next;
+      setCamera(next);
+      if (raw < 1) frameRef.current = requestAnimationFrame(tick);
+    };
+    frameRef.current = requestAnimationFrame(tick);
+  };
+  useEffect(() => {
+    if (!terrainMode) {
+      setEvent(undefined);
+      previousTerritories.current = undefined;
+      return;
+    }
+    const before = previousTerritories.current;
+    const current = new Map(state.territories.map((territory) => [territory.id, { hp: territory.hp, owner: territory.owner }]));
+    previousTerritories.current = current;
+    // First state sync establishes the baseline; it must not replay old
+    // game events when an operator opens Broadcast.
+    if (!before) return;
+    const changed = state.territories.find((territory) => {
+      const old = before.get(territory.id);
+      return old && (old.owner !== territory.owner || territory.hp < old.hp - 0.01);
+    });
+    if (!changed) return;
+    const latest = [...state.effects].reverse().find((item) => item.province === changed.id) ?? {
+      id: `terrain-${changed.id}-${Date.now()}`,
+      province: changed.id,
+      player: changed.contributors?.at(-1)?.name ?? "Người chơi LIVE",
+      power: Math.max(1, Math.round((before.get(changed.id)?.hp ?? state.settings.hp) - changed.hp)),
+      kind: changed.owner ? "capture" : "light",
+      team: changed.owner ?? "neutral",
+    };
+    const province = provinces.find((item) => item.id === changed.id);
+    if (!province) return;
+    const point = project(province.center);
+    setEvent(latest);
+    window.clearTimeout(resetRef.current);
+    moveCamera({ x: point.x, y: point.y, scale: latest.kind === "super" ? 2.15 : 1.75 }, 620);
+    resetRef.current = window.setTimeout(() => { setEvent(undefined); moveCamera({ x: 350, y: 410, scale: 1 }, 900); }, latest.kind === "super" ? 2850 : 1950);
+  }, [terrainMode, state.territories, state.effects, state.settings.hp, provinces]);
+  useEffect(() => () => { cancelAnimationFrame(frameRef.current ?? 0); window.clearTimeout(resetRef.current); }, []);
+  if (!terrainMode) return null;
+  const tx = 350 - camera.scale * camera.x;
+  const ty = 410 - camera.scale * camera.y;
+  const eventProvince = event && provinces.find((province) => province.id === event.province);
+  const eventPoint = eventProvince ? project(eventProvince.center) : undefined;
+  const selectProvince = (pointer: ReactPointerEvent<SVGSVGElement>) => {
+    const bounds = pointer.currentTarget.getBoundingClientRect();
+    const x = ((pointer.clientX - bounds.left) / bounds.width * 700 - tx) / camera.scale;
+    const y = ((pointer.clientY - bounds.top) / bounds.height * 820 - ty) / camera.scale;
+    const province = provinces.find((candidate) => candidate.polygons.some((polygon) => {
+      const contains = (ring: number[][]) => Phaser.Geom.Polygon.Contains(new Phaser.Geom.Polygon(ring.map(project)), x, y);
+      return contains(polygon[0]) && !polygon.slice(1).some(contains);
+    }));
+    if (province) onSelect(province.id);
+  };
   return (
-    <svg className="province-terrain" viewBox="0 0 700 820" aria-hidden="true">
+    <svg className="province-terrain" viewBox="0 0 700 820" aria-label="Bản đồ địa hình Việt Nam" onPointerDown={selectProvince}>
       <defs>
         <clipPath id={`${prefix}-all`} clipPathUnits="userSpaceOnUse">
           {provinces.flatMap((province) => province.polygons.map((polygon, index) => (
@@ -42,6 +116,7 @@ function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: S
           </clipPath>
         ))}
       </defs>
+      <g transform={`translate(${tx} ${ty}) scale(${camera.scale})`}>
       <g clipPath={`url(#${prefix}-all)`}>
         <image href={terrainSurface} x="-68" y="-38" width="836" height="1115" preserveAspectRatio="xMidYMid slice" />
         {/* The dormant map is deliberately dark. Light is revealed only by
@@ -68,6 +143,16 @@ function ProvinceTerrain({ provinces, state }: { provinces: Province[]; state: S
         {provinces.flatMap((province) => province.polygons.map((polygon, index) => (
           <path key={`${province.id}-${index}`} d={polygonPath(polygon)} fillRule="evenodd" />
         )))}
+      </g>
+      {eventPoint && event && (
+        <g className="terrain-event" transform={`translate(${eventPoint.x} ${eventPoint.y})`}>
+          <circle r="10" fill="#fff3ae" opacity=".9" />
+          <circle r="10" fill="none" stroke="#ffd34e" strokeWidth="3" className="terrain-event-ring" />
+          <circle r="4" fill="#fff" />
+          <text y="-20" textAnchor="middle" className="terrain-event-user">{event.player}</text>
+          <text y="31" textAnchor="middle" className="terrain-event-score">+{event.power} ÁNH SÁNG</text>
+        </g>
+      )}
       </g>
     </svg>
   );
@@ -409,8 +494,8 @@ export function BattleMap({
     };
   }, [provinces]);
   return (
-    <div className="map-canvas" role="img" aria-label="Bản đồ lãnh thổ Việt Nam. Chọn tỉnh bằng bản đồ hoặc danh sách bên cạnh.">
-      <ProvinceTerrain provinces={provinces} state={state} />
+    <div className={`map-canvas ${state.settings.map === "cyber-grid" ? "terrain-mode" : ""}`} role="img" aria-label="Bản đồ lãnh thổ Việt Nam. Chọn tỉnh bằng bản đồ hoặc danh sách bên cạnh.">
+      <ProvinceTerrain provinces={provinces} state={state} onSelect={onSelect} />
       <div ref={host} className="map-phaser-layer" />
     </div>
   );
