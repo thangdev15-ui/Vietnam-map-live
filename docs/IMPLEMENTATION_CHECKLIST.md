@@ -1,5 +1,15 @@
 # Checklist nâng cấp “Thắp sáng Việt Nam”
 
+## Epic VFX Engine — Phase 1: Golden Awakening
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| VFX-01 | Xây VFX engine tập trung: preset, hàng đợi theo priority/cooldown, pool và manager camera/light/particle/audio | `apps/frontend/src/vfx.ts` | Event gameplay tạo job thật, job quan trọng được ưu tiên và bị giới hạn | COMPLETED |
+| VFX-02 | Golden Awakening Map 1: trace, wave, beacon, shockwave, particles, pulse, crystal, explosion, rain | `Map.tsx` / Phaser | Capture/super-light hiển thị animation thật cùng đúng tỉnh; camera cũ vẫn hoạt động | COMPLETED |
+| VFX-03 | Golden Awakening Map 2: bundle SVG bị clip đúng polygon tỉnh | `Map.tsx`, `style.css` | Wave/rain/pulse/trace không vượt ranh giới; beam, particle và label theo cùng transform camera | COMPLETED |
+| VFX-04 | Tôn trọng reduced motion, giới hạn effect đồng thời và không đổi state game | `Map.tsx`, `vfx.ts` | Không block Socket/gameplay; animation tự cleanup | COMPLETED |
+| VFX-05 | Build, lint, mô phỏng event và chụp bằng chứng cả Map 1/2 | `docs/verification/vfx-phase1-map1.png`, `docs/verification/vfx-phase1-map2.png` | Build/lint pass; mô phỏng super-light render VFX ở hai map | COMPLETED |
+
 ## Nền tảng và dữ liệu
 
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |

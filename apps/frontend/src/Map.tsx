@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Phaser from "phaser";
 import type { Province, State } from "../../../packages/shared/index";
 import terrainSurface from "./assets/terrain-surface-v1.png";
+import { EffectPool, VFXManager, type VfxJob } from "./vfx";
 const project = ([x, y]: number[]) => ({
   x: (x - 101.5) * 62 + 50,
   y: (24 - y) * 49 + 20,
@@ -31,11 +32,12 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
   const cameraRef = useRef(camera);
   const frameRef = useRef<number | undefined>(undefined);
   const resetRef = useRef<number | undefined>(undefined);
+  const vfx = useRef(new VFXManager()).current;
   // State is delivered over Socket.IO. Track territory deltas rather than
   // trusting a transient effect entry: this guarantees that camera + light
   // target the province whose HP/owner actually changed.
   const previousTerritories = useRef<Map<string, { hp: number; owner: string | null }> | undefined>(undefined);
-  const [event, setEvent] = useState<State["effects"][number]>();
+  const [event, setEvent] = useState<VfxJob>();
   const territoryById = new Map(state.territories.map((territory) => [territory.id, territory]));
   const moveCamera = (target: TerrainCamera, duration: number) => {
     cancelAnimationFrame(frameRef.current ?? 0);
@@ -79,17 +81,21 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
     const province = provinces.find((item) => item.id === changed.id);
     if (!province) return;
     const point = project(province.center);
-    setEvent(latest);
+    if (!vfx.enqueue(latest)) return;
+    const job = vfx.next();
+    if (!job) return;
+    setEvent(job);
     window.clearTimeout(resetRef.current);
-    moveCamera({ x: point.x, y: point.y, scale: latest.kind === "super" ? 2.15 : 1.75 }, 620);
-    resetRef.current = window.setTimeout(() => { setEvent(undefined); moveCamera({ x: 350, y: 410, scale: 1 }, 900); }, latest.kind === "super" ? 2850 : 1950);
-  }, [terrainMode, state.territories, state.effects, state.settings.hp, provinces]);
+    moveCamera({ x: point.x, y: point.y, scale: vfx.camera.focusScale(job) }, 620);
+    resetRef.current = window.setTimeout(() => { setEvent(undefined); moveCamera({ x: 350, y: 410, scale: 1 }, 900); }, job.duration);
+  }, [terrainMode, state.territories, state.effects, state.settings.hp, provinces, vfx]);
   useEffect(() => () => { cancelAnimationFrame(frameRef.current ?? 0); window.clearTimeout(resetRef.current); }, []);
   if (!terrainMode) return null;
   const tx = 350 - camera.scale * camera.x;
   const ty = 410 - camera.scale * camera.y;
   const eventProvince = event && provinces.find((province) => province.id === event.province);
   const eventPoint = eventProvince ? project(eventProvince.center) : undefined;
+  const eventParticles = useMemo(() => event ? vfx.particles.seeds(event.id, event.tier === "spark" ? 14 : 34, event.tier === "epic" ? 50 : 34) : [], [event, vfx]);
   const selectProvince = (pointer: ReactPointerEvent<SVGSVGElement>) => {
     const bounds = pointer.currentTarget.getBoundingClientRect();
     const x = ((pointer.clientX - bounds.left) / bounds.width * 700 - tx) / camera.scale;
@@ -103,6 +109,11 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
   return (
     <svg className="province-terrain" viewBox="0 0 700 820" aria-label="Bản đồ địa hình Việt Nam" onPointerDown={selectProvince}>
       <defs>
+        <linearGradient id="terrain-beacon-gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0" />
+          <stop offset=".5" stopColor="#fff6af" stopOpacity=".96" />
+          <stop offset="1" stopColor="#ff9d24" stopOpacity=".16" />
+        </linearGradient>
         <clipPath id={`${prefix}-all`} clipPathUnits="userSpaceOnUse">
           {provinces.flatMap((province) => province.polygons.map((polygon, index) => (
             <path key={`${province.id}-${index}`} d={polygonPath(polygon)} fillRule="evenodd" clipRule="evenodd" />
@@ -145,13 +156,38 @@ function ProvinceTerrain({ provinces, state, onSelect }: { provinces: Province[]
         )))}
       </g>
       {eventPoint && event && (
-        <g className="terrain-event" transform={`translate(${eventPoint.x} ${eventPoint.y})`}>
-          <circle r="10" fill="#fff3ae" opacity=".9" />
-          <circle r="10" fill="none" stroke="#ffd34e" strokeWidth="3" className="terrain-event-ring" />
-          <circle r="4" fill="#fff" />
-          <text y="-20" textAnchor="middle" className="terrain-event-user">{event.player}</text>
-          <text y="31" textAnchor="middle" className="terrain-event-score">+{event.power} ÁNH SÁNG</text>
-        </g>
+        <>
+          {/* Every in-province VFX element is clipped by its real geometry.
+              This keeps energy waves and rain inside the province during zoom. */}
+          <g clipPath={`url(#${prefix}-${event.province})`} className={`terrain-awakening terrain-awakening-${event.tier}`}>
+            <rect width="700" height="820" className="terrain-golden-pulse" />
+            <rect x={eventPoint.x - 12} y="-90" width="24" height={eventPoint.y + 130} className="terrain-divine-beacon" />
+            <circle cx={eventPoint.x} cy={eventPoint.y} r="9" className="terrain-energy-wave terrain-energy-wave-one" />
+            <circle cx={eventPoint.x} cy={eventPoint.y} r="9" className="terrain-energy-wave terrain-energy-wave-two" />
+            {eventProvince!.polygons.map((polygon, index) => (
+              <path key={`trace-${index}`} d={polygonPath(polygon)} className="terrain-golden-trace" fill="none" />
+            ))}
+            {eventParticles.map((particle, index) => (
+              <circle key={`particle-${index}`} cx={eventPoint.x + particle.x} cy={eventPoint.y + particle.y} r={particle.size} fill={index % 4 === 0 ? "#ffffff" : "#ffd34e"} className="terrain-golden-particle">
+                <animate attributeName="cy" from={eventPoint.y + particle.y} to={eventPoint.y + particle.y - particle.drift} dur="1.25s" begin={`${particle.delay}ms`} fill="freeze" />
+                <animate attributeName="opacity" values="0;1;.85;0" dur="1.25s" begin={`${particle.delay}ms`} fill="freeze" />
+              </circle>
+            ))}
+            {[0, 1, 2].map((index) => (
+              <path key={`crystal-${index}`} d={`M ${eventPoint.x + (index - 1) * 13} ${eventPoint.y + 12} l 6 -${22 + index * 7} l 7 ${22 + index * 7} Z`} className="terrain-crystal" />
+            ))}
+            {eventParticles.slice(0, 13).map((particle, index) => (
+              <line key={`rain-${index}`} x1={eventPoint.x + particle.x} y1={eventPoint.y - 85 - index * 4} x2={eventPoint.x + particle.x - 6} y2={eventPoint.y - 48 - index * 4} className="terrain-golden-rain" style={{ animationDelay: `${particle.delay}ms` }} />
+            ))}
+          </g>
+          <g className="terrain-event" transform={`translate(${eventPoint.x} ${eventPoint.y})`}>
+            <circle r="13" fill="#fff3ae" opacity=".92" className="terrain-core-flash" />
+            <circle r="10" fill="none" stroke="#ffd34e" strokeWidth="3" className="terrain-event-ring" />
+            <circle r="4" fill="#fff" />
+            <text y="-23" textAnchor="middle" className="terrain-event-user">{event.player}</text>
+            <text y="35" textAnchor="middle" className="terrain-event-score">+{event.power} ÁNH SÁNG</text>
+          </g>
+        </>
       )}
       </g>
     </svg>
@@ -176,6 +212,7 @@ export function BattleMap({
     const seen = new Set<string>();
     let graphics: Phaser.GameObjects.Graphics;
     let markers: Phaser.GameObjects.Container;
+    let pooledParticles: EffectPool<Phaser.GameObjects.Arc>;
     let previous = "";
     let markerSignature = "";
     let active = 0;
@@ -183,11 +220,17 @@ export function BattleMap({
     let tourReset: Phaser.Time.TimerEvent | undefined;
     let effectsReady = false;
     let touring = 0;
+    const vfx = new VFXManager();
     class MapScene extends Phaser.Scene {
       create() {
         scene.current = this;
         graphics = this.add.graphics();
         markers = this.add.container();
+        pooledParticles = new EffectPool(
+          () => this.add.circle(-100, -100, 1, 0xffffff, 0).setVisible(false),
+          (particle) => particle.setVisible(false).setAlpha(0).setScale(1).setPosition(-100, -100),
+          72,
+        );
         const stars = this.add.graphics();
         for (let i = 0; i < 65; i++) {
           const x = Phaser.Math.Between(8, 692);
@@ -321,6 +364,46 @@ export function BattleMap({
           onComplete: () => flash.destroy(),
         });
       }
+      goldenAwakening(province: Province, position: { x: number; y: number }, effect: VfxJob) {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const duration = reduced ? 1 : effect.duration;
+        // Golden Trace and Pulse use the real province rings, never a loose rectangle.
+        const trace = this.add.graphics();
+        trace.lineStyle(3.6, 0xffe378, 0.96);
+        const pulse = this.add.graphics();
+        pulse.fillStyle(0xffc737, 0.36);
+        for (const polygon of province.polygons) {
+          const points = polygon[0].map(project);
+          trace.strokePoints(points, true);
+          pulse.fillPoints(points, true);
+        }
+        trace.setBlendMode(Phaser.BlendModes.ADD);
+        pulse.setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: trace, alpha: { from: 0, to: 1 }, duration: 150, yoyo: true, hold: Math.min(760, duration / 2), onComplete: () => trace.destroy() });
+        this.tweens.add({ targets: pulse, alpha: 0, duration: Math.min(1250, duration), ease: "Cubic.easeOut", onComplete: () => pulse.destroy() });
+        // Keep a portrait-safe beacon around the target. A full-height quad
+        // looked like a solid banner after camera zoom, not like light.
+        const beacon = this.add.rectangle(position.x, position.y - 52, 9, 112, 0xffe68a, 0.72).setBlendMode(Phaser.BlendModes.ADD);
+        this.tweens.add({ targets: beacon, scaleX: effect.tier === "epic" ? 2.7 : 2.1, scaleY: 1.45, alpha: 0, duration: Math.min(960, duration), ease: "Cubic.easeOut", onComplete: () => beacon.destroy() });
+        [0, 170].forEach((delay, index) => this.time.delayedCall(delay, () => {
+          const wave = this.add.circle(position.x, position.y, 8, 0xffdf70, 0.07).setStrokeStyle(2.4, index ? 0xff9d24 : 0xfff4ac, 0.9).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: wave, scale: effect.tier === "epic" ? 17 : 11, alpha: 0, duration: 960, ease: "Cubic.easeOut", onComplete: () => wave.destroy() });
+        }));
+        // Procedural particles, crystals and golden rain; every object self-cleans.
+        const seeds = vfx.particles.seeds(effect.id, effect.tier === "epic" ? 42 : 27, effect.tier === "epic" ? 94 : 62);
+        seeds.forEach((seed, index) => {
+          const particle = pooledParticles.acquire().setPosition(position.x + seed.x, position.y + seed.y).setRadius(seed.size).setFillStyle(index % 4 ? 0xffd34e : 0xffffff, 0.94).setBlendMode(Phaser.BlendModes.ADD).setVisible(true).setAlpha(1);
+          this.tweens.add({ targets: particle, y: particle.y - seed.drift, alpha: 0, scale: 0.15, delay: seed.delay, duration: 860, ease: "Sine.easeOut", onComplete: () => pooledParticles.release(particle) });
+        });
+        [-14, 0, 14].forEach((offset, index) => {
+          const crystal = this.add.triangle(position.x + offset, position.y + 8, 0, 23, 7, 0, 14, 23, 0xffef9a, 0.96).setStrokeStyle(1, 0xff9d24, 0.9).setScale(1, 0.05);
+          this.tweens.add({ targets: crystal, scaleY: 1.25, delay: 80 + index * 120, duration: 330, ease: "Back.easeOut", yoyo: true, hold: 550, onComplete: () => crystal.destroy() });
+        });
+        seeds.slice(0, 12).forEach((seed, index) => {
+          const rain = this.add.line(position.x + seed.x, position.y - 100 - index * 5, 0, 0, -6, 34, 0xfff2a6, 0.8).setLineWidth(1.8).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: rain, y: rain.y + 95, alpha: 0, delay: seed.delay, duration: 700, ease: "Quad.easeIn", onComplete: () => rain.destroy() });
+        });
+      }
       showEffect(e: State["effects"][number], _s: State) {
         const province = provinces.find((p) => p.id === e.province);
         if (!province) return;
@@ -337,6 +420,10 @@ export function BattleMap({
         const complete = e.kind === "complete";
         const lighting = e.kind === "light";
         const gathering = e.kind === "gather";
+        // Both views receive gameplay effects through the same bounded VFX
+        // queue. Map 1 consumes this job here; Map 2 consumes it in SVG.
+        const job = vfx.enqueue(e) ? vfx.next() : undefined;
+        if (job && (capture || superLight || chest || complete)) this.goldenAwakening(province, position, job);
         this.flashProvince(province, color, capture || superLight);
         const finish = () => {
           active--;
@@ -385,8 +472,12 @@ export function BattleMap({
           }
         };
         if (superLight || chest || combo || complete) {
-          const beam = this.add.rectangle(position.x, -20, 14, 44, color, 0.9).setBlendMode(Phaser.BlendModes.ADD);
-          this.tweens.add({ targets: beam, y: position.y, scaleX: complete ? 15 : superLight ? 8 : combo ? 6 : 5, scaleY: complete ? 34 : superLight ? 20 : combo ? 17 : 14, alpha: 0, duration: reduced ? 1 : complete ? 1300 : superLight ? 900 : 700, ease: "Quad.easeIn", onComplete: () => { beam.destroy(); explode(); } });
+          // The old full-height rectangle read as a flat orange slab on a
+          // portrait stream. The beacon is now rendered by Golden Awakening;
+          // this is only its focused impact core before the burst.
+          const flare = this.add.circle(position.x, position.y, 7, color, 0.94).setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({ targets: flare, scale: superLight ? 8 : 5, alpha: 0, duration: reduced ? 1 : superLight ? 720 : 520, ease: "Cubic.easeOut", onComplete: () => flare.destroy() });
+          this.time.delayedCall(reduced ? 1 : superLight ? 650 : 460, explode);
         } else if (e.kind === "attack") {
           const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
           const start = { x: position.x + Math.cos(angle) * 170, y: position.y + Math.sin(angle) * 170 };
