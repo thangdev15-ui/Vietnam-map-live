@@ -11,6 +11,8 @@ import {
   defaults,
   settingsSchema,
   eventSchema,
+  mapSchema,
+  type Settings,
   type Province,
   type State,
 } from "../../../packages/shared/index";
@@ -21,20 +23,27 @@ import { Processor } from "./processor";
 export function createApp(token: string, dbPath: string) {
   const store = new Store(dbPath);
   const rawSettings = store.get<Record<string, unknown>>("settings");
-  // Previous releases stored the geographic asset as `map`. Keep their game
-  // settings, but migrate them to the first visual battlefield automatically.
-  if (rawSettings && (rawSettings.map === "historical63" || rawSettings.map === "merged34")) {
-    rawSettings.map = "war-room";
-    rawSettings.activeMaps = ["war-room", "cyber-grid", "imperial-atlas"];
+  // Releases before multi-map stored a skin name here. Migrate persisted
+  // settings once, retaining the old 34/63 Vietnam choice where possible.
+  if (rawSettings && ["historical63", "merged34", "war-room", "cyber-grid", "imperial-atlas"].includes(String(rawSettings.map))) {
+    rawSettings.vietnamVariant = rawSettings.map === "merged34" ? "merged34" : "historical63";
+    rawSettings.map = "vietnam";
+    rawSettings.activeMaps = ["vietnam", "southeast-asia", "world"];
   }
   const settings = settingsSchema.parse(rawSettings ?? defaults);
-  const load = () =>
+  const assetFor = (current: Settings) =>
+    current.map === "vietnam"
+      ? `${current.vietnamVariant}.json`
+      : current.map === "southeast-asia"
+        ? "southeast-asia.json"
+        : "world.json";
+  const load = (current: Settings) =>
     JSON.parse(
-      readFileSync(resolve("assets/maps", "historical63.json"), "utf8"),
+      readFileSync(resolve("assets/maps", assetFor(current)), "utf8"),
     ) as Province[];
-  let engine = new GameEngine(load(), settings);
+  let engine = new GameEngine(load(settings), settings);
   const saved = store.get<State>("state");
-  if (saved && saved.settings.map === settings.map) {
+  if (saved && saved.settings.map === settings.map && saved.territories.every((t) => engine.provinces.some((p) => p.id === t.id))) {
     engine.state = saved;
     engine.state.settings = settings;
     if (saved.phase === "running" && saved.endsAt <= Date.now())
@@ -57,10 +66,10 @@ export function createApp(token: string, dbPath: string) {
       .slice(0, 20)
       .map((p) => ({ ...p, id: "", history: [] })),
   });
-  const activateMap = (map: typeof settings.map) => {
+  const activateMap = (map: Settings["map"]) => {
     const banned = engine.state.players.filter((player) => player.blocked);
     const selectedSettings = { ...engine.state.settings, map };
-    engine = new GameEngine(load(), selectedSettings);
+    engine = new GameEngine(load(selectedSettings), selectedSettings);
     engine.state.players = banned;
     processor.engine = engine;
     engine.start();
@@ -166,7 +175,7 @@ export function createApp(token: string, dbPath: string) {
     r.json({ ok: true });
   });
   app.post("/api/admin/choose-map", (q, r) => {
-    const { map } = z.object({ map: z.enum(["war-room", "cyber-grid", "imperial-atlas"]) }).parse(q.body);
+    const { map } = z.object({ map: mapSchema }).parse(q.body);
     const result = engine.chooseMap(map);
     if (result !== "vote_result") {
       r.status(409).json({ error: result });
@@ -215,7 +224,7 @@ export function createApp(token: string, dbPath: string) {
     }
     const s = settingsSchema.parse(q.body);
     const banned = engine.state.players.filter((p) => p.blocked);
-    engine = new GameEngine(load(), s);
+    engine = new GameEngine(load(s), s);
     engine.state.players = banned;
     processor.engine = engine;
     store.set("settings", s);
@@ -303,6 +312,7 @@ export function createApp(token: string, dbPath: string) {
     get engine() {
       return engine;
     },
+    activateMap,
     close: async () => {
       clearInterval(interval);
       adapter.disconnect();

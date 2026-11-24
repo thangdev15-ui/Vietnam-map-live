@@ -13,13 +13,12 @@ export const teamSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   keyword: z.string().min(1).max(40),
 });
-// Every arena uses the same verified 63-province geometry. These IDs choose
-// the live show's visual battlefield treatment, never a different geography.
-export const mapSchema = z.enum(["war-room", "cyber-grid", "imperial-atlas"]);
+// Each ID points to a separate geographic dataset; it is not a visual skin.
+export const mapSchema = z.enum(["vietnam", "southeast-asia", "world"]);
 export const mapCatalog = {
-  "war-room": { id: "war-room", name: "WAR ROOM", keyword: "1", description: "Bàn chỉ huy chiến lược ánh vàng" },
-  "cyber-grid": { id: "cyber-grid", name: "CYBER NETWORK", keyword: "2", description: "Mạng năng lượng cyan tương lai" },
-  "imperial-atlas": { id: "imperial-atlas", name: "IMPERIAL ATLAS", keyword: "3", description: "Đế chế hắc kim và hỏa quang" },
+  vietnam: { id: "vietnam", name: "VIỆT NAM", keyword: "1", description: "63 tỉnh, thành Việt Nam" },
+  "southeast-asia": { id: "southeast-asia", name: "ĐÔNG NAM Á", keyword: "2", description: "11 quốc gia Đông Nam Á" },
+  world: { id: "world", name: "THẾ GIỚI", keyword: "3", description: "242 quốc gia và vùng lãnh thổ" },
 } as const;
 export const settingsSchema = z
   .object({
@@ -54,7 +53,8 @@ export const settingsSchema = z
       )
       .max(200),
     map: mapSchema,
-    activeMaps: z.array(mapSchema).min(1).max(3).default(["war-room", "cyber-grid", "imperial-atlas"]),
+    vietnamVariant: z.enum(["historical63", "merged34"]).default("historical63"),
+    activeMaps: z.array(mapSchema).min(1).max(3).default(["vietnam", "southeast-asia", "world"]),
     votingDuration: z.number().int().min(10).max(120).default(30),
     comboWindow: z.number().int().min(2).max(60).default(10),
     comboThreshold: z.number().int().min(2).max(20).default(3),
@@ -90,8 +90,9 @@ export const defaults: Settings = {
   gifts: [
     { id: "rose", name: "Rose", skill: "attack", power: 40, enabled: true },
   ],
-  map: "war-room",
-  activeMaps: ["war-room", "cyber-grid", "imperial-atlas"],
+  map: "vietnam",
+  vietnamVariant: "historical63",
+  activeMaps: ["vietnam", "southeast-asia", "world"],
   votingDuration: 30,
   comboWindow: 10,
   comboThreshold: 3,

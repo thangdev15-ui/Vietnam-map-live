@@ -5,8 +5,19 @@
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
 |---|---|---|---|---|
 | CORE-01 | Giữ Node/Express, Socket.IO, SQLite và connector hiện tại | toàn dự án | Không thay stack, build và test qua | COMPLETED |
-| CORE-02 | Dùng dữ liệu vùng có thật | `assets/maps/historical63.json` | Mọi trận dùng 63 tỉnh có geometry thật | COMPLETED |
-| CORE-03 | Tách dữ liệu địa lý khỏi giao diện chiến trường | `shared`, `server`, `Map` | Thay skin không đổi danh sách 63 tỉnh | COMPLETED |
+| CORE-02 | Dùng dữ liệu vùng có thật | `assets/maps` | Mọi map dùng geometry offline có nguồn rõ ràng | COMPLETED |
+| CORE-03 | Tách dữ liệu địa lý khỏi giao diện chiến trường | `shared`, `server`, `Map` | Renderer nạp đúng dữ liệu theo map ID | COMPLETED |
+
+## Rebuild multi-map thực tế
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| MM-01 | Registry map chứa map ID, asset, keyword và metadata | `packages/shared`, `apps/backend` | Không hardcode CSS skin là map | COMPLETED |
+| MM-02 | Việt Nam dùng 63/34 vùng theo cấu hình | `assets/maps/vietnam-*` | Chỉ vùng Việt Nam được chọn sáng | COMPLETED |
+| MM-03 | Đông Nam Á dùng country polygons độc lập | `assets/maps/southeast-asia.json` | Có các quốc gia ASEAN geometry riêng | COMPLETED |
+| MM-04 | Thế giới dùng country polygons độc lập | `assets/maps/world.json` | Hình dáng toàn cầu khác hẳn VN/SEA | COMPLETED |
+| MM-05 | Chuyển map nạp geometry/state mới, fade và fit camera | server/renderer/socket | Không giữ hình dạng hay territory cũ | COMPLETED |
+| MM-06 | Test asset, map switch, ID isolation, reload | `tests` | Có test tự động, ảnh thực tế đang chờ browser bridge | IN_PROGRESS |
 
 ## Broadcast và bản đồ
 
@@ -14,7 +25,7 @@
 |---|---|---|---|---|
 | UI-01 | Broadcast dark navy / vàng / cyan, header và HUD dọc | `main.tsx`, `style.css` | Hiển thị portrait responsive | COMPLETED |
 | UI-02 | Camera focus, đèn rơi, hạt sáng, avatar người góp ánh sáng | `Map.tsx` | Sự kiện comment/capture/gather tạo animation thật | COMPLETED |
-| UI-03 | Ba battlefield skin: War Room, Cyber Network, Imperial Atlas | `shared`, `Map.tsx`, `style.css` | Vote skin đổi palette/lưới/panel; 63 tỉnh giữ nguyên | COMPLETED |
+| UI-03 | Ba map có hình học khác nhau | registry/assets/renderer | Vote đổi dữ liệu địa lý, không phải chỉ skin | IN_PROGRESS |
 | UI-04 | Bố cục desktop 16:9 tối ưu livestream | `main.tsx`, `style.css` | Kiểm tra trực quan ở 1920x1080 | IN_PROGRESS |
 | UI-05 | Panel top 5/10, tỉnh đóng góp cao nhất, animation đổi hạng | `main.tsx` | Có dữ liệu và animation thay đổi hạng | IN_PROGRESS |
 
