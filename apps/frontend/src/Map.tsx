@@ -271,43 +271,20 @@ export function BattleMap({
       }
       update() {
         const s = latest.current;
-        const key = JSON.stringify({ territories: s.territories, mode: s.settings.map });
+        const key = JSON.stringify(s.territories);
         if (key !== previous) {
           previous = key;
           graphics.clear();
-          const mode = s.settings.map;
-          // These are three different Phaser drawing pipelines over the exact
-          // same province polygons, not CSS colour themes.
-          if (mode === "satellite") {
-            graphics.fillStyle(0x062436, 0.92);
-            graphics.fillRect(0, 0, width, height);
-            // Raster-like ocean/land relief bands behind the province overlay.
-            for (let y = 0; y < height; y += 26) {
-              graphics.lineStyle(1, y % 52 ? 0x1a5c70 : 0x3a8da1, 0.16);
-              graphics.lineBetween(0, y, width, y + 18);
-            }
-          } else if (mode === "terrain") {
-            graphics.fillStyle(0x101a13, 1);
-            graphics.fillRect(0, 0, width, height);
-          } else {
-            graphics.fillStyle(0x070817, 1);
-            graphics.fillRect(0, 0, width, height);
-            for (let i = 0; i < 18; i++) {
-              const fog = this.add.circle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), Phaser.Math.Between(35, 120), 0x4763aa, 0.035);
-              this.tweens.add({ targets: fog, x: fog.x + 40, alpha: 0.008, duration: 4300, yoyo: true, repeat: -1 });
-            }
-          }
           for (const p of provinces) {
             const t = s.territories.find((t) => t.id === p.id);
             const lit = Boolean(t?.owner);
             const progress = Phaser.Math.Clamp(1 - (t?.hp ?? s.settings.hp) / s.settings.hp, 0, 1);
             // Unlit provinces brighten gradually with each viewer comment.
-            const altitude = Math.abs(Math.sin(p.center[0] * 4.17 + p.center[1] * 2.31));
-            const palette = mode === "satellite"
-              ? { unlit: altitude > 0.58 ? 0x315237 : 0x476d3b, warm: 0xb89b3f, lit: 0xffce42, line: 0xa5c77a, bright: 0xfff3ad }
-              : mode === "fantasy"
-                ? { unlit: 0x191b43, warm: 0x754bc0, lit: 0xffc83d, line: 0x7184eb, bright: 0xfff5a8 }
-                : { unlit: altitude > 0.58 ? 0x2c3c2b : 0x53613c, warm: 0xb28735, lit: 0xffcb47, line: 0x90a46a, bright: 0xfff5bd };
+            const palette = s.settings.map === "southeast-asia"
+              ? { unlit: 0x071d35, warm: 0x08cfe9, lit: 0x30f5dc, line: 0x2f9aba, bright: 0xc8ffff }
+              : s.settings.map === "world"
+                ? { unlit: 0x211920, warm: 0xd14c20, lit: 0xffb326, line: 0x8a4035, bright: 0xffe4a3 }
+                : { unlit: 0x10294a, warm: 0xe6a51f, lit: 0xffc83d, line: 0x4e7196, bright: 0xfff5a8 };
             const unlit = Phaser.Display.Color.IntegerToColor(palette.unlit);
             const warm = Phaser.Display.Color.IntegerToColor(palette.warm);
             const lerp = (from: number, to: number) => Math.round(from + (to - from) * progress);
@@ -316,12 +293,7 @@ export function BattleMap({
               lerp(unlit.green, warm.green),
               lerp(unlit.blue, warm.blue),
             );
-            if (mode === "terrain") {
-              // Extruded province edges create a stable pseudo-3D elevation.
-              graphics.fillStyle(0x0b100b, 0.9);
-              for (const polygon of p.polygons) graphics.fillPoints(polygon[0].map(([x, y]) => ({ x: project([x, y]).x + 7, y: project([x, y]).y + 11 })), true);
-            }
-            graphics.fillStyle(fillColor, lit ? 0.96 : mode === "satellite" ? 0.73 : 0.88 + progress * 0.08);
+            graphics.fillStyle(fillColor, lit ? 0.96 : 0.88 + progress * 0.08);
             graphics.lineStyle(lit ? 5 : 1 + progress * 2.2, lit ? palette.warm : palette.line, lit ? 0.18 : 0.72 + progress * 0.2);
             for (const polygon of p.polygons) {
               const points = polygon[0].map(project);

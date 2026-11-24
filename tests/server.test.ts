@@ -123,27 +123,34 @@ describe("Server integration", () => {
       map.every((p: { polygons: unknown[] }) => p.polygons.length > 0),
     ).toBe(true);
   });
-  it("changes rendering mode without resetting Vietnam territories or score", async () => {
-    await start();
+  it("loads a separate geographic dataset and resets lighting when the voted map changes", async () => {
+    const url = await start();
     server!.engine.start();
     server!.engine.triggerSuperLight("ha-noi", 100);
-    const before = structuredClone(server!.engine.state.territories);
-    server!.activateMap("satellite");
-    expect(server!.engine.state.settings.map).toBe("satellite");
-    expect(server!.engine.state.territories).toEqual(before);
-    expect(server!.engine.provinces).toHaveLength(63);
+    expect(server!.engine.state.territories.some((territory) => territory.owner)).toBe(true);
+    server!.activateMap("southeast-asia");
+    const southeastAsia = await (await fetch(url + "/api/map")).json() as { id: string; name: string }[];
+    expect(southeastAsia).toHaveLength(11);
+    expect(southeastAsia.some((region) => region.name === "Thái Lan")).toBe(true);
+    expect(server!.engine.state.territories.every((territory) => !territory.owner)).toBe(true);
+    server!.engine.finish();
+    server!.activateMap("world");
+    const world = await (await fetch(url + "/api/map")).json() as { id: string }[];
+    expect(world.length).toBeGreaterThan(150);
+    expect(world.some((region) => region.id === "country-vnm")).toBe(true);
   });
-  it("restores selected rendering mode and Vietnam state after restart", async () => {
+  it("restores the selected map and its own territory schema after restart", async () => {
     const dbPath = "/tmp/vietnam-map-live-reload-test.db";
     if (existsSync(dbPath)) rmSync(dbPath);
     await start(dbPath);
-    server!.activateMap("fantasy");
+    server!.activateMap("world");
     await server!.close();
     server = undefined;
     await start(dbPath);
-    expect(server!.engine.state.settings.map).toBe("fantasy");
-    expect(server!.engine.provinces).toHaveLength(63);
-    await server!.close(); server = undefined;
+    expect(server!.engine.state.settings.map).toBe("world");
+    expect(server!.engine.provinces.length).toBeGreaterThan(150);
+    await server!.close();
+    server = undefined;
     if (existsSync(dbPath)) rmSync(dbPath);
   });
 });

@@ -23,15 +23,20 @@ import { Processor } from "./processor";
 export function createApp(token: string, dbPath: string) {
   const store = new Store(dbPath);
   const rawSettings = store.get<Record<string, unknown>>("settings");
-  // Migrate older geographic-map and visual-skin releases to the terrain
-  // rendering mode. All current modes use the one Vietnam province dataset.
-  if (rawSettings && ["historical63", "merged34", "war-room", "cyber-grid", "imperial-atlas", "vietnam", "southeast-asia", "world"].includes(String(rawSettings.map))) {
+  // Releases before multi-map stored a skin name here. Migrate persisted
+  // settings once, retaining the old 34/63 Vietnam choice where possible.
+  if (rawSettings && ["historical63", "merged34", "war-room", "cyber-grid", "imperial-atlas"].includes(String(rawSettings.map))) {
     rawSettings.vietnamVariant = rawSettings.map === "merged34" ? "merged34" : "historical63";
-    rawSettings.map = "terrain";
-    rawSettings.activeMaps = ["terrain", "satellite", "fantasy"];
+    rawSettings.map = "vietnam";
+    rawSettings.activeMaps = ["vietnam", "southeast-asia", "world"];
   }
   const settings = settingsSchema.parse(rawSettings ?? defaults);
-  const assetFor = (current: Settings) => `${current.vietnamVariant}.json`;
+  const assetFor = (current: Settings) =>
+    current.map === "vietnam"
+      ? `${current.vietnamVariant}.json`
+      : current.map === "southeast-asia"
+        ? "southeast-asia.json"
+        : "world.json";
   const load = (current: Settings) =>
     JSON.parse(
       readFileSync(resolve("assets/maps", assetFor(current)), "utf8"),
@@ -62,10 +67,13 @@ export function createApp(token: string, dbPath: string) {
       .map((p) => ({ ...p, id: "", history: [] })),
   });
   const activateMap = (map: Settings["map"]) => {
-    // A style vote changes only rendering. Territory, score, players and the
-    // 63/34 geometry remain exactly as they are.
-    engine.state.settings = { ...engine.state.settings, map };
-    store.set("settings", engine.state.settings);
+    const banned = engine.state.players.filter((player) => player.blocked);
+    const selectedSettings = { ...engine.state.settings, map };
+    engine = new GameEngine(load(selectedSettings), selectedSettings);
+    engine.state.players = banned;
+    processor.engine = engine;
+    store.set("settings", selectedSettings);
+    engine.start();
     store.set("state", engine.state);
     io.emit("mapChanged");
   };
@@ -143,15 +151,6 @@ export function createApp(token: string, dbPath: string) {
       return;
     }
     next();
-  });
-  app.post("/api/admin/style", (q, r) => {
-    const { map } = z.object({ map: mapSchema }).parse(q.body);
-    if (!engine.state.settings.allowLiveStyleSwitch && ["running", "paused"].includes(engine.state.phase)) {
-      r.status(409).json({ error: "Đổi chế độ khi đang đấu đã bị tắt" });
-      return;
-    }
-    activateMap(map);
-    r.json({ ok: true });
   });
   app.get("/api/admin/status", (_q, r) =>
     r.json({

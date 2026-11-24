@@ -5,12 +5,11 @@ export function Overview({
   startMatch,
   endMatch,
   chooseMap,
-  switchStyle,
   closeVote,
   pauseMatch,
   resumeMatch,
   busy,
-}: Pick<AdminPanelProps, "state" | "status" | "startMatch" | "endMatch" | "chooseMap" | "switchStyle" | "closeVote" | "pauseMatch" | "resumeMatch" | "busy">) {
+}: Pick<AdminPanelProps, "state" | "status" | "startMatch" | "endMatch" | "chooseMap" | "closeVote" | "pauseMatch" | "resumeMatch" | "busy">) {
   return (
     <>
       <div className="metrics">
@@ -41,16 +40,6 @@ export function Overview({
         </button>
         {state.phase === "running" && <button className="secondary command-end" disabled={Boolean(busy)} onClick={pauseMatch}>Ⅱ Tạm dừng trận</button>}
         {state.phase === "paused" && <button className="command-start" disabled={Boolean(busy)} onClick={resumeMatch}>▶ Tiếp tục trận</button>}
-        {state.settings.allowLiveStyleSwitch && (
-          <div className="map-admin-choice">
-            <b>Đổi chế độ hiển thị — không reset trận</b>
-            {(["terrain", "satellite", "fantasy"] as const).map((mode) => (
-              <button key={mode} className={state.settings.map === mode ? "selected" : "secondary"} disabled={Boolean(busy)} onClick={() => switchStyle(mode)}>
-                {mode === "terrain" ? "Địa hình" : mode === "satellite" ? "Vệ tinh" : "Chiến thuật"}
-              </button>
-            ))}
-          </div>
-        )}
         {state.phase === "voting" && (
           <button className="secondary command-end" disabled={Boolean(busy)} onClick={closeVote}>
             {busy === "close-vote" ? "ĐANG CHỐT PHIẾU…" : "✓ Chốt bình chọn ngay"}

@@ -13,12 +13,12 @@ export const teamSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   keyword: z.string().min(1).max(40),
 });
-// Rendering modes share the same Vietnam province geometry and game state.
-export const mapSchema = z.enum(["terrain", "satellite", "fantasy"]);
+// Each ID points to a separate geographic dataset; it is not a visual skin.
+export const mapSchema = z.enum(["vietnam", "southeast-asia", "world"]);
 export const mapCatalog = {
-  terrain: { id: "terrain", name: "ĐỊA HÌNH", keyword: "1", description: "Địa hình nổi khối, núi và đồng bằng" },
-  satellite: { id: "satellite", name: "VỆ TINH", keyword: "2", description: "Bề mặt vệ tinh, rừng, sông và biển" },
-  fantasy: { id: "fantasy", name: "CHIẾN THUẬT", keyword: "3", description: "Bản đồ fantasy cinematic" },
+  vietnam: { id: "vietnam", name: "VIỆT NAM", keyword: "1", description: "63 tỉnh, thành Việt Nam" },
+  "southeast-asia": { id: "southeast-asia", name: "ĐÔNG NAM Á", keyword: "2", description: "11 quốc gia Đông Nam Á" },
+  world: { id: "world", name: "THẾ GIỚI", keyword: "3", description: "242 quốc gia và vùng lãnh thổ" },
 } as const;
 export const settingsSchema = z
   .object({
@@ -54,8 +54,7 @@ export const settingsSchema = z
       .max(200),
     map: mapSchema,
     vietnamVariant: z.enum(["historical63", "merged34"]).default("historical63"),
-    activeMaps: z.array(mapSchema).min(1).max(3).default(["terrain", "satellite", "fantasy"]),
-    allowLiveStyleSwitch: z.boolean().default(true),
+    activeMaps: z.array(mapSchema).min(1).max(3).default(["vietnam", "southeast-asia", "world"]),
     votingDuration: z.number().int().min(10).max(120).default(30),
     comboWindow: z.number().int().min(2).max(60).default(10),
     comboThreshold: z.number().int().min(2).max(20).default(3),
@@ -91,10 +90,9 @@ export const defaults: Settings = {
   gifts: [
     { id: "rose", name: "Rose", skill: "attack", power: 40, enabled: true },
   ],
-  map: "terrain",
+  map: "vietnam",
   vietnamVariant: "historical63",
-  activeMaps: ["terrain", "satellite", "fantasy"],
-  allowLiveStyleSwitch: true,
+  activeMaps: ["vietnam", "southeast-asia", "world"],
   votingDuration: 30,
   comboWindow: 10,
   comboThreshold: 3,

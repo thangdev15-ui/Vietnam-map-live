@@ -93,8 +93,6 @@ export function Admin({
       "✦ Đã chọn bản đồ. Đang chuẩn bị chiến trường.",
       "choose-map",
     );
-  const switchStyle = (map: Settings["map"]) =>
-    run(() => api("style", token, { map }), "✓ Đã đổi chế độ hiển thị, trận và điểm được giữ nguyên.", "style");
   const closeVote = () =>
     run(
       () => api("close-vote", token, {}),
@@ -300,7 +298,7 @@ export function Admin({
           </div>
         )}
         {tab === "Tổng quan" && (
-          <Overview state={state} status={status} startMatch={startMatch} endMatch={endMatch} chooseMap={chooseMap} switchStyle={switchStyle} closeVote={closeVote} pauseMatch={pauseMatch} resumeMatch={resumeMatch} busy={busy} />
+          <Overview state={state} status={status} startMatch={startMatch} endMatch={endMatch} chooseMap={chooseMap} closeVote={closeVote} pauseMatch={pauseMatch} resumeMatch={resumeMatch} busy={busy} />
         )}
         {tab === "TikTok LIVE" && (
           <Live

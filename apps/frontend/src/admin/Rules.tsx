@@ -10,7 +10,7 @@ export function Rules({
       <h2>Thông số trận tiếp theo</h2>
       <div className="form-grid">
         <label>
-          Chế độ hiển thị mặc định
+          Bản đồ chiến trường mặc định
           <select
             value={settings.map}
             onChange={(e) =>
@@ -20,9 +20,9 @@ export function Rules({
               })
             }
           >
-            <option value="terrain">Địa hình • nổi khối</option>
-            <option value="satellite">Vệ tinh • bề mặt tự nhiên</option>
-            <option value="fantasy">Chiến thuật • cinematic</option>
+            <option value="vietnam">Việt Nam • 63 tỉnh, thành</option>
+            <option value="southeast-asia">Đông Nam Á • 11 quốc gia</option>
+            <option value="world">Thế giới • 242 quốc gia/vùng</option>
           </select>
         </label>
         <label>
@@ -49,9 +49,9 @@ export function Rules({
         ).map(([k, l]) => numeric(k, l))}
       </div>
       <label className="map-options">
-        Chế độ hiển thị cho phép bình chọn
+        Bản đồ cho phép bình chọn
         <span>
-          {(["terrain", "satellite", "fantasy"] as const).map((map) => (
+          {(["vietnam", "southeast-asia", "world"] as const).map((map) => (
             <button
               type="button"
               className={settings.activeMaps.includes(map) ? "selected" : "secondary"}
@@ -63,14 +63,10 @@ export function Rules({
                 if (activeMaps.length) setSettings({ ...settings, activeMaps });
               }}
             >
-              {map === "terrain" ? "STYLE 1 · Địa hình" : map === "satellite" ? "STYLE 2 · Vệ tinh" : "STYLE 3 · Chiến thuật"}
+              {map === "vietnam" ? "MAP 1 · Việt Nam" : map === "southeast-asia" ? "MAP 2 · Đông Nam Á" : "MAP 3 · Thế giới"}
             </button>
           ))}
         </span>
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.allowLiveStyleSwitch} onChange={(e) => setSettings({ ...settings, allowLiveStyleSwitch: e.target.checked })} />
-        Cho phép quản trị viên đổi chế độ khi trận đang diễn ra
       </label>
       <label className="check">
         <input

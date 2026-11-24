@@ -45,7 +45,6 @@ export type AdminPanelProps = {
   startMatch: () => Promise<void>;
   endMatch: () => Promise<void>;
   chooseMap: (map: Settings["map"]) => Promise<void>;
-  switchStyle: (map: Settings["map"]) => Promise<void>;
   closeVote: () => Promise<void>;
   pauseMatch: () => Promise<void>;
   resumeMatch: () => Promise<void>;
