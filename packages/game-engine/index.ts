@@ -24,6 +24,7 @@ export class GameEngine {
         id: p.id,
         owner: null,
         hp: settings.hp,
+        contributors: [],
       })),
       players: [],
       feed: [],
@@ -113,6 +114,10 @@ export class GameEngine {
       if (province) {
         p.target = province.id;
         p.team ??= "gold";
+        const territory = this.state.territories.find((t) => t.id === province.id)!;
+        this.rememberContributor(territory, p);
+        if (territory.owner === p.team)
+          return this.gatherLight(p, territory, e.id);
         // A city accumulates light from every viewer. Four standard comments
         // (25 light each) complete its lantern, rather than one comment winning it.
         return this.act(p, "attack", s.attack, e.id, "light");
@@ -177,6 +182,41 @@ export class GameEngine {
       e.type === "like" ? Math.min(e.count, 10) : 10,
       e.id,
     );
+  }
+  private rememberContributor(
+    territory: State["territories"][number],
+    player: Player,
+  ) {
+    const contributor = { id: player.id, name: player.name, avatar: player.avatar };
+    territory.contributors = [
+      contributor,
+      ...(territory.contributors ?? []).filter((entry) => entry.id !== player.id),
+    ].slice(0, 8);
+  }
+  private gatherLight(
+    player: Player,
+    territory: State["territories"][number],
+    id: string,
+  ) {
+    const power = Math.max(1, Math.round(this.state.settings.attack / 5));
+    player.score += power;
+    player.combo++;
+    player.history.unshift(`cùng thắp ${territory.id} +${power}`);
+    player.history.length = Math.min(30, player.history.length);
+    this.log(
+      `${player.name} cùng thắp ${this.provinces.find((province) => province.id === territory.id)?.name}`,
+    );
+    this.state.effects.push({
+      id,
+      province: territory.id,
+      team: player.team!,
+      kind: "gather",
+      power,
+      player: player.name,
+      avatar: player.avatar,
+    });
+    this.state.effects = this.state.effects.slice(-30);
+    return "gather";
   }
   act(
     p: Player,

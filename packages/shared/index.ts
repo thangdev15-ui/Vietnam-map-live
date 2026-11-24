@@ -97,7 +97,12 @@ export type Province = {
   center: [number, number];
   polygons: number[][][][];
 };
-export type Territory = { id: string; owner: string | null; hp: number };
+export type Territory = {
+  id: string;
+  owner: string | null;
+  hp: number;
+  contributors?: { id: string; name: string; avatar?: string }[];
+};
 export type Player = {
   id: string;
   name: string;

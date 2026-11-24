@@ -83,7 +83,9 @@ export function BattleMap({
       }
       refreshMarkers(s: State) {
         const lit = s.territories.filter((t) => t.owner);
-        const key = lit.map((t) => t.id).join("|");
+        const key = lit
+          .map((t) => `${t.id}:${(t.contributors ?? []).map((player) => player.name).join(",")}`)
+          .join("|");
         if (key === markerSignature) return;
         markerSignature = key;
         markers.removeAll(true);
@@ -96,6 +98,15 @@ export function BattleMap({
           const bulb = this.add.circle(0, 0, 5, 0xfff4ae, 1).setStrokeStyle(1.5, 0xffaa18, 1);
           const sparkle = this.add.text(0, -11, "✦", { fontFamily: "Arial Black, sans-serif", fontSize: "10px", color: "#fff2a0", stroke: "#6f3e00", strokeThickness: 1 }).setOrigin(0.5);
           marker.add([halo, bulb, sparkle]);
+          (territory.contributors ?? []).slice(0, 6).forEach((player, personIndex) => {
+            const angle = (personIndex / Math.min(6, (territory.contributors ?? []).length)) * Math.PI * 2 - Math.PI / 2;
+            const distance = 15 + (personIndex % 2) * 3;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            const person = this.add.circle(x, y, 5.2, 0x102248, 1).setStrokeStyle(1.3, 0xffe783, 1);
+            const initial = this.add.text(x, y, player.name.slice(0, 1).toUpperCase(), { fontFamily: "Arial Black, sans-serif", fontSize: "5px", color: "#fff6bc" }).setOrigin(0.5);
+            marker.add([person, initial]);
+          });
           markers.add(marker);
           this.tweens.add({ targets: halo, scale: 1.45, alpha: 0.06, duration: 1300, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: index * 55 });
         });
@@ -123,9 +134,10 @@ export function BattleMap({
         tourReset?.remove(false);
         const capture = kind === "capture";
         const lighting = kind === "light";
+        const gathering = kind === "gather";
         camera.pan(position.x, position.y, capture ? 560 : 360, "Cubic.easeOut");
-        camera.zoomTo(capture ? 2.28 : lighting ? 1.28 : 1.35, capture ? 560 : 360, "Cubic.easeOut");
-        cameraReset = this.time.delayedCall(capture ? 2900 : lighting ? 920 : 980, () => {
+        camera.zoomTo(capture ? 2.28 : gathering ? 1.55 : lighting ? 1.28 : 1.35, capture ? 560 : 360, "Cubic.easeOut");
+        cameraReset = this.time.delayedCall(capture ? 2900 : gathering ? 1700 : lighting ? 920 : 980, () => {
           camera.pan(350, 410, capture ? 980 : 460, "Sine.easeInOut");
           camera.zoomTo(1, capture ? 980 : 460, "Sine.easeInOut");
         });
@@ -157,13 +169,14 @@ export function BattleMap({
         if (!reduced) this.focusEvent(position, e.kind);
         const capture = e.kind === "capture";
         const lighting = e.kind === "light";
+        const gathering = e.kind === "gather";
         this.flashProvince(province, color, capture);
         const finish = () => {
           active--;
         };
         const ring = this.add.circle(position.x, position.y, 7, color, 0.22).setStrokeStyle(2.5, color, 1);
         const label = this.add
-          .text(position.x, position.y - 4, capture ? `✦ ${e.player}\nTHẮP SÁNG` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
+          .text(position.x, position.y - 4, capture ? `✦ ${e.player}\nTHẮP SÁNG` : gathering ? `✦ ${e.player}\nCÙNG THẮP` : lighting ? `+${e.power} ÁNH SÁNG` : `${e.kind === "heal" ? "+" : "✦"}${e.power}`, {
             fontFamily: "Arial Black, sans-serif",
             fontSize: capture ? "14px" : "12px",
             align: "center",
@@ -173,7 +186,7 @@ export function BattleMap({
           })
           .setOrigin(0.5);
         const lightPlayer = () => {
-          if (!capture) return;
+          if (!capture && !gathering) return;
           const card = this.add.container(position.x + 28, position.y - 27).setScale(0.25).setAlpha(0);
           const halo = this.add.circle(0, 0, 15, 0xffc83d, 0.22);
           const avatar = this.add.circle(0, 0, 9, 0x17284a, 1).setStrokeStyle(2, 0xffed9a, 1);
@@ -182,21 +195,21 @@ export function BattleMap({
           const city = province.name.length > 14 ? `${province.name.slice(0, 13)}…` : province.name;
           const plate = this.add.rectangle(39, -2, Math.max(70, name.length * 6.4 + 25), 27, 0xffe485, 0.98).setStrokeStyle(1, 0xffffff, 0.72);
           const text = this.add.text(39, -6, name, { fontFamily: "Arial Black, sans-serif", fontSize: "8px", color: "#3d2400" }).setOrigin(0.5);
-          const subtext = this.add.text(39, 5, `THẮP ${city.toUpperCase()}`, { fontFamily: "Arial, sans-serif", fontStyle: "bold", fontSize: "5.5px", color: "#7b4800" }).setOrigin(0.5);
+          const subtext = this.add.text(39, 5, `${gathering ? "CÙNG THẮP" : "THẮP"} ${city.toUpperCase()}`, { fontFamily: "Arial, sans-serif", fontStyle: "bold", fontSize: "5.5px", color: "#7b4800" }).setOrigin(0.5);
           card.add([plate, text, subtext, halo, avatar, initial]);
           this.tweens.add({ targets: card, alpha: 1, scale: 1, y: card.y - 7, duration: 340, ease: "Back.easeOut" });
           this.tweens.add({ targets: halo, scale: 1.8, alpha: 0, delay: 180, duration: 900, ease: "Sine.easeOut" });
           this.time.delayedCall(2600, () => this.tweens.add({ targets: card, alpha: 0, y: card.y - 8, duration: 350, onComplete: () => card.destroy() }));
         };
         const explode = () => {
-          this.burst(position, color, capture ? 26 : lighting ? 14 : 11, capture ? 78 : lighting ? 43 : 36);
-          this.tweens.add({ targets: ring, scale: capture ? 13 : lighting ? 6.8 : 5.2, alpha: 0, duration: capture ? 1280 : lighting ? 720 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
+          this.burst(position, color, capture ? 26 : gathering ? 16 : lighting ? 14 : 11, capture ? 78 : gathering ? 48 : lighting ? 43 : 36);
+          this.tweens.add({ targets: ring, scale: capture ? 13 : gathering ? 8 : lighting ? 6.8 : 5.2, alpha: 0, duration: capture ? 1280 : gathering ? 900 : lighting ? 720 : 540, ease: "Cubic.easeOut", onComplete: () => ring.destroy() });
           this.tweens.add({ targets: label, y: position.y - (capture ? 62 : 32), alpha: 0, duration: capture ? 1500 : 760, ease: "Cubic.easeOut", onComplete: () => { label.destroy(); finish(); } });
           if (!reduced) {
             this.cameras.main.shake(capture ? 120 : 60, capture ? 0.0025 : 0.0015);
             if (capture) this.cameras.main.flash(95, 255, 224, 123, false);
           }
-          if (capture) {
+          if (capture || gathering) {
             [120, 250].forEach((delay, index) => this.time.delayedCall(delay, () => {
               const wave = this.add.circle(position.x, position.y, 10, 0xffed83, 0.08).setStrokeStyle(2, 0xffd34c, 0.76 - index * 0.18);
               this.tweens.add({ targets: wave, scale: 8 + index * 2, alpha: 0, duration: 920, ease: "Cubic.easeOut", onComplete: () => wave.destroy() });

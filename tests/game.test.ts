@@ -40,6 +40,15 @@ describe("Game rules", () => {
     expect(g.state.territories[0]).toMatchObject({ owner: "gold", hp: 100 });
     expect(g.state.players[0]).toMatchObject({ team: "gold", target: "ha-noi", score: 100 });
   });
+  it("keeps a lit city open and shows later contributors", () => {
+    const g = game();
+    for (let i = 0; i < 4; i++) g.apply(event("Hà Nội"));
+    const visitor = { ...event("Hà Nội"), userId: "visitor", username: "Người cùng thắp" };
+    expect(g.apply(visitor)).toBe("gather");
+    expect(g.state.territories[0].contributors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "Người cùng thắp" })]),
+    );
+  });
   it("captures province only after defense exhausted", () => {
     const g = game();
     g.apply(event("đỏ"));
