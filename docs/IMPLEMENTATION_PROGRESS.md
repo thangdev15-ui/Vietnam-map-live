@@ -84,3 +84,9 @@ Ngày cập nhật: 2026-11-24
 - Khi có Euler Business thật, đặt `TIKTOK_SIGN_MODE=business` và `TIKTOK_SIGN_API_KEY`; nếu thiếu key ở mode này adapter báo lỗi cấu hình trước khi thử kết nối.
 - Không dùng cookie, mật khẩu TikTok hoặc secret trên frontend.
 - Kiểm tra bằng Node 24: connector unit tests, full Vitest 38/38, ESLint và production build pass. Kết nối LIVE thật vẫn cần được người dùng kiểm thử với đúng `@uniqueId` đang phát.
+
+
+## TikTok signing deployment diagnostics — 2026-11-25
+
+- Admin LIVE hiển thị `community` hoặc `business` lấy từ backend status, không trả về API key. Điều này cho phép phân biệt cấu hình Render mới với bundle/backend cũ.
+- Kiểm tra HTTP production URL: `vietnam-map-live-j3y2.onrender.com` có header `x-render-origin-server: Render`; tại thời điểm kiểm tra vẫn trả bundle `index-BwkVMcNj.js`, thuộc deploy trước Community fallback. Cần Render deploy commit mới trước khi thử kết nối lại.

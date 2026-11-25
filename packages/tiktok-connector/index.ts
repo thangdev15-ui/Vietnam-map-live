@@ -4,17 +4,23 @@ import {
   ControlEvent,
 } from "tiktok-live-connector";
 import type { LiveEvent } from "../shared/index";
+export type TikTokSigningMode = "community" | "business";
 export interface LiveAdapter {
   connect(username: string): Promise<void>;
   disconnect(): void;
-  status: { state: string; username: string; error: string; attempt: number };
+  status: { state: string; username: string; error: string; attempt: number; signingMode: TikTokSigningMode };
 }
 export class TikTokAdapter implements LiveAdapter {
-  status = { state: "disconnected", username: "", error: "", attempt: 0 };
+  status = { state: "disconnected", username: "", error: "", attempt: 0, signingMode: this.signingMode() };
   connection: TikTokLiveConnection | null = null;
   timer: ReturnType<typeof setTimeout> | undefined;
   generation = 0;
   constructor(private emit: (e: LiveEvent) => void) {}
+  private signingMode(): TikTokSigningMode {
+    return process.env.TIKTOK_SIGN_MODE?.trim().toLowerCase() === "business"
+      ? "business"
+      : "community";
+  }
   disconnect() {
     this.generation++;
     clearTimeout(this.timer);
@@ -26,17 +32,18 @@ export class TikTokAdapter implements LiveAdapter {
   }
   async connect(username: string) {
     this.disconnect();
-    const signMode = (process.env.TIKTOK_SIGN_MODE ?? "community").trim().toLowerCase();
+    const signMode = this.signingMode();
     if (signMode === "business" && !process.env.TIKTOK_SIGN_API_KEY?.trim()) {
       this.status = {
         state: "error",
         username,
         attempt: 0,
         error: "Chế độ Business cần TIKTOK_SIGN_API_KEY hợp lệ.",
+        signingMode: signMode,
       };
       return;
     }
-    this.status = { state: "connecting", username, error: "", attempt: 0 };
+    this.status = { state: "connecting", username, error: "", attempt: 0, signingMode: signMode };
     await this.open(this.generation, signMode === "business");
   }
   private async open(gen: number, useBusinessKey = false) {
@@ -134,7 +141,7 @@ export class TikTokAdapter implements LiveAdapter {
         this.timer = undefined;
         void this.open(
           gen,
-          (process.env.TIKTOK_SIGN_MODE ?? "community").trim().toLowerCase() === "business",
+          this.signingMode() === "business",
         );
       },
       Math.min(30000, 1000 * 2 ** this.status.attempt),

@@ -80,6 +80,7 @@
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
 |---|---|---|---|---|
 | TIKTOK-01 | Cho phép nhận comment/gift bằng Euler Community, không gửi Business API key vào endpoint ký premium | `packages/tiktok-connector/index.ts` | Mặc định tạo connection không có `signApiKey`; `TIKTOK_SIGN_MODE=business` mới truyền key; test lifecycle của cả hai mode | COMPLETED |
+| TIKTOK-02 | Hiển thị mode ký đang chạy trong Admin để phân biệt bản deploy cũ/Business/Community, không lộ key | `tiktok-connector`, `server`, `admin/Live.tsx` | `/api/admin/status` và UI hiển thị mode, test mode Community/Business pass | COMPLETED |
 
 ## Voice
 

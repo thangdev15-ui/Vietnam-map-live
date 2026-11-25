@@ -6,7 +6,7 @@ import type {
   LiveEvent,
 } from "../../../../packages/shared/index";
 export type Status = {
-  tiktok: { state: string; error: string; username: string };
+  tiktok: { state: string; error: string; username: string; signingMode: "community" | "business" };
   players: Player[];
   logs: {
     id: string;

@@ -37,10 +37,14 @@ export function Live({
       <p>
         {status?.tiktok.state} {status?.tiktok.username}
       </p>
+      <p>
+        Chế độ ký đang chạy: <strong>{status?.tiktok.signingMode ?? "đang tải"}</strong>
+      </p>
       <p className="error">{status?.tiktok.error}</p>
       <p>
-        Cần đặt TIKTOK_SIGN_API_KEY trong file .env rồi khởi động lại server.
-        Không nhập mật khẩu hoặc cookie TikTok vào game.
+        Community không gửi API key và phù hợp để thử nhận comment/gift. Business
+        chỉ dùng khi Render đặt <code>TIKTOK_SIGN_MODE=business</code>. Không nhập
+        mật khẩu hoặc cookie TikTok vào game.
       </p>
     </section>
   );
