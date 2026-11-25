@@ -63,3 +63,10 @@ Ngày cập nhật: 2026-11-24
 - Added deployment runbooks: `docs/RENDER_NEW_ACCOUNT.md` then `docs/CLOUDFLARE_PAGES.md`. No secret was committed.
 - Verification: Pages-target build passed; full TypeScript/Vite/backend build passed; ESLint passed; Vitest 36/36 passed.
 - Operational limit: Render free `/tmp` SQLite remains ephemeral and dynamic Socket/API/TTS response bytes still leave Render. Static viewer payload is moved to Pages after user completes provider-account setup.
+
+## Socket bandwidth control
+
+- Replaced unconditional full `state` Socket.IO broadcast every 100 ms with initial/full reset snapshots plus append-safe `statePatch` deltas at most once per 500 ms.
+- Patch only carries changed territories, current visible players, latest feed, newly-added effects and scalar match data; idle state emits nothing.
+- Enabled WebSocket per-message compression above 1 KB. `GET /api/admin/status` now reports approximate outgoing realtime frames/bytes/recipients for deployment monitoring.
+- Verification: Socket integration test confirms a patch is below 50% of first snapshot, no idle snapshot is sent, and telemetry increments; full build/lint/Vitest 36/36 passed.

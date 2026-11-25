@@ -67,27 +67,36 @@ describe("Server integration", () => {
     expect((await post("start", {})).ok).toBe(true);
     expect((await post("start", {})).status).toBe(409);
   });
-  it("connects, synchronizes authoritative state, reconnects and disconnects Socket.IO", async () => {
+  it("sends one full Socket snapshot, then compact realtime patches", async () => {
     const url = await start();
-    const socket = client(url, {
-      autoConnect: false,
-      transports: ["websocket"],
-    });
-    const next = () => new Promise<State>((r) => socket.once("state", r));
-    let promise = next();
-    socket.connect();
-    expect((await promise).phase).toBe("waiting");
     server!.engine.start();
-    server!.processor.enqueue(ev("join"));
-    promise = next();
-    const state = await promise;
-    expect(state.players[0].team).toBe("red");
-    expect(state.players[0].id).toBe("");
-    socket.disconnect();
-    expect(socket.connected).toBe(false);
-    promise = next();
+    const socket = client(url, { autoConnect: false, transports: ["websocket"] });
+    const snapshot = new Promise<State>((resolve) => socket.once("state", resolve));
     socket.connect();
-    expect((await promise).players.length).toBe(1);
+    const initial = await snapshot;
+    expect(initial.phase).toBe("running");
+
+    // Let the server issue the required full reset snapshot for the new match.
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+    const patch = new Promise<Partial<State>>((resolve) => socket.once("statePatch", resolve));
+    server!.processor.enqueue(ev("join"));
+    const update = await patch;
+    expect(update.players?.[0]).toMatchObject({ team: "red", id: "" });
+    expect(update.territories).toBeUndefined();
+    expect(JSON.stringify(update).length).toBeLessThan(JSON.stringify(initial).length / 2);
+
+    // The previous implementation sent a complete state every 100 ms even idle.
+    // After initial sync, no idle frame is sent in this interval.
+    let idleSnapshots = 0;
+    socket.on("state", () => idleSnapshots++);
+    await new Promise((resolve) => setTimeout(resolve, 1_200));
+    expect(idleSnapshots).toBe(0);
+    const telemetry = await fetch(url + "/api/admin/status", {
+      headers: { authorization: "Bearer " + token },
+    }).then((response) => response.json()) as { realtime: { snapshots: number; patches: number; bytes: number } };
+    expect(telemetry.realtime.snapshots).toBeGreaterThan(0);
+    expect(telemetry.realtime.patches).toBeGreaterThan(0);
+    expect(telemetry.realtime.bytes).toBeGreaterThan(0);
     socket.disconnect();
   });
   it("deduplicates queued and persisted events, enforces cooldown", async () => {

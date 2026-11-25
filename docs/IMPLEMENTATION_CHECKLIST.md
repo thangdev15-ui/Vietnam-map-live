@@ -114,3 +114,10 @@
 | CDN-01 | Frontend có thể dùng API/Socket origin khác Render hiện tại | `api.ts`, `main.tsx`, `audio.ts` | `VITE_API_ORIGIN` rỗng vẫn chạy cùng origin; có giá trị thì map/socket/TTS/admin gọi backend đó; Pages build pass | COMPLETED |
 | CDN-02 | Render chỉ chấp nhận CORS từ Pages origin được cấu hình | `server.ts`, `render.yaml` | Origin trong `CORS_ORIGINS` được cấp header, origin khác không được cấp; local header/preflight pass | COMPLETED |
 | CDN-03 | Có cấu hình header/static và hướng dẫn deploy Pages không chứa secret | `public/_headers`, `docs/CLOUDFLARE_PAGES.md`, `docs/RENDER_NEW_ACCOUNT.md` | Pages build từ `dist/client`, assets immutable, hướng dẫn verify và tạo Render mới | COMPLETED |
+
+## BANDWIDTH — Socket.IO realtime delta sync
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| BW-05 | Không phát full state mỗi 100 ms; client mới nhận snapshot đầy đủ, viewer đang xem nhận delta theo thay đổi và có giới hạn tần suất | `apps/backend/src/server.ts`, `apps/frontend/src/main.tsx` | Không có thay đổi thì không gửi byte; statePatch tối đa 1 lần/0,5 giây; state đầy đủ khi connect/map reset | COMPLETED |
+| BW-06 | Giữ animation/leaderboard/map đúng sau delta và đo số frame/byte Socket gửi | `server.ts`, `main.tsx`, `tests/server.test.ts` | Test snapshot + patch nhỏ hơn 50% snapshot, không có idle snapshot; admin telemetry outbound; build/lint/test pass | COMPLETED |

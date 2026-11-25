@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import { Server } from "socket.io";
+import { Server, type Socket } from "socket.io";
 import { z } from "zod";
 import {
   defaults,
@@ -14,6 +14,9 @@ import {
   eventSchema,
   type Province,
   type State,
+  type Territory,
+  type Player,
+  type Effect,
 } from "../../../packages/shared/index";
 import { GameEngine } from "../../../packages/game-engine/index";
 import { TikTokAdapter } from "../../../packages/tiktok-connector/index";
@@ -71,21 +74,113 @@ export function createApp(token: string, dbPath: string) {
   const http = createServer(app);
   const io = new Server(http, {
     maxHttpBufferSize: 16384,
+    perMessageDeflate: { threshold: 1024 },
     cors: { origin: (origin, done) => done(null, acceptsOrigin(origin)), credentials: false },
   });
   const speech = new EdgeSpeechCache();
   const ttsJobs = new Map<string, TtsJob>();
-  const publicState = () => ({
-    ...engine.state,
-    voting: engine.state.voting
-      ? { ...engine.state.voting, voterIds: [] }
-      : undefined,
-    players: engine.state.players
-      .filter((p) => !p.blocked)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20)
-      .map((p) => ({ ...p, id: "", history: [] })),
-  });
+  type PublicState = Omit<State, "players" | "voting"> & {
+    players: Player[];
+    voting?: Omit<NonNullable<State["voting"]>, "voterIds">;
+  };
+  type StatePatch = Pick<PublicState, "phase" | "endsAt" | "pausedRemaining" | "winner" | "processed" | "chestsUnlocked" | "voting"> & {
+    settings?: PublicState["settings"];
+    territories?: Territory[];
+    players?: Player[];
+    feed?: string[];
+    effects?: Effect[];
+  };
+  const publicState = (): PublicState => {
+    const voting = engine.state.voting
+      ? {
+          endsAt: engine.state.voting.endsAt,
+          resultEndsAt: engine.state.voting.resultEndsAt,
+          candidates: engine.state.voting.candidates,
+          winner: engine.state.voting.winner,
+        }
+      : undefined;
+    return {
+      ...engine.state,
+      // The broadcast only renders the latest few feed entries. Capping it here
+      // keeps both first-sync and delta frames bounded as a live runs longer.
+      feed: engine.state.feed.slice(0, 8),
+      voting,
+      players: engine.state.players
+        .filter((p) => !p.blocked)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20)
+        .map((p) => ({ ...p, id: "", history: [] })),
+    };
+  };
+  const outbound = { snapshots: 0, patches: 0, bytes: 0, recipients: 0, lastAt: 0 };
+  const serializeState = (state: PublicState) => JSON.stringify(state);
+  const cloneState = (state: PublicState) => JSON.parse(serializeState(state)) as PublicState;
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const statePatch = (before: PublicState, after: PublicState): StatePatch | null | undefined => {
+    // A new match starts with a distinct object graph; a full snapshot avoids
+    // applying a delta from the previous match to its new territories.
+    if (before.matchId !== after.matchId) return null;
+    const changedTerritories = after.territories.filter((territory) => {
+      const old = before.territories.find((item) => item.id === territory.id);
+      return !same(old, territory);
+    });
+    const newEffects = after.effects.filter((effect) => !before.effects.some((old) => old.id === effect.id));
+    const patch: StatePatch = {
+      phase: after.phase,
+      endsAt: after.endsAt,
+      pausedRemaining: after.pausedRemaining,
+      winner: after.winner,
+      processed: after.processed,
+      chestsUnlocked: after.chestsUnlocked,
+      voting: after.voting,
+    };
+    if (!same(before.settings, after.settings)) patch.settings = after.settings;
+    if (changedTerritories.length) patch.territories = changedTerritories;
+    if (!same(before.players, after.players)) patch.players = after.players;
+    if (!same(before.feed, after.feed)) patch.feed = after.feed;
+    if (newEffects.length) patch.effects = newEffects;
+    return same(before, after) ? undefined : patch;
+  };
+  const recordFrame = (kind: "snapshot" | "patch", payload: unknown, recipients: number) => {
+    outbound[kind === "snapshot" ? "snapshots" : "patches"]++;
+    // Approximate pre-compression outgoing payload. Socket.IO's wire framing and
+    // WebSocket compression are not exposed by the library, but this makes
+    // regressions visible and scales the measurement by actual live viewers.
+    outbound.bytes += Buffer.byteLength(JSON.stringify(payload)) * recipients;
+    outbound.recipients += recipients;
+    outbound.lastAt = Date.now();
+  };
+  const emitSnapshot = (socket?: Socket) => {
+    const snapshot = publicState();
+    const bytes = Buffer.byteLength(serializeState(snapshot));
+    // WebSocket compression is independent from Express HTTP compression. It
+    // removes repeated JSON keys from these realtime frames.
+    if (socket) socket.compress(bytes >= 1024).emit("state", snapshot);
+    else io.compress(bytes >= 1024).emit("state", snapshot);
+    recordFrame("snapshot", snapshot, socket ? 1 : io.engine.clientsCount);
+    return cloneState(snapshot);
+  };
+  let lastBroadcastState = cloneState(publicState());
+  let nextStateSyncAt = 0;
+  const syncState = (forceSnapshot = false) => {
+    const now = Date.now();
+    if (!forceSnapshot && now < nextStateSyncAt) return;
+    nextStateSyncAt = now + 500;
+    if (forceSnapshot) {
+      lastBroadcastState = emitSnapshot();
+      return;
+    }
+    const next = cloneState(publicState());
+    const patch = statePatch(lastBroadcastState, next);
+    if (patch === undefined) return;
+    if (patch === null) {
+      lastBroadcastState = emitSnapshot();
+      return;
+    }
+    io.compress(Buffer.byteLength(JSON.stringify(patch)) >= 1024).emit("statePatch", patch);
+    recordFrame("patch", patch, io.engine.clientsCount);
+    lastBroadcastState = next;
+  };
   const activateMap = (map: typeof settings.map) => {
     const banned = engine.state.players.filter((player) => player.blocked);
     const selectedSettings = { ...engine.state.settings, map };
@@ -95,6 +190,7 @@ export function createApp(token: string, dbPath: string) {
     engine.start();
     store.set("state", engine.state);
     io.emit("mapChanged");
+    syncState(true);
   };
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use((q, r, next) => {
@@ -172,6 +268,7 @@ export function createApp(token: string, dbPath: string) {
       players: engine.state.players,
       logs: store.logs(),
       queue: processor.queue.length,
+      realtime: { ...outbound, connected: io.engine.clientsCount },
       matches: store.db
         .prepare("SELECT id,at,state FROM matches ORDER BY at DESC LIMIT 20")
         .all(),
@@ -261,6 +358,7 @@ export function createApp(token: string, dbPath: string) {
     store.set("settings", s);
     store.set("state", engine.state);
     io.emit("mapChanged");
+    syncState(true);
     r.json(s);
   });
   app.post("/api/admin/events", (q, r) => {
@@ -325,7 +423,9 @@ export function createApp(token: string, dbPath: string) {
       });
     },
   );
-  io.on("connection", (socket) => socket.emit("state", publicState()));
+  io.on("connection", (socket) => {
+    emitSnapshot(socket);
+  });
   let lastTick = Date.now();
   const interval = setInterval(() => {
     try {
@@ -340,7 +440,7 @@ export function createApp(token: string, dbPath: string) {
         store.db
           .prepare("INSERT OR IGNORE INTO matches VALUES(?,?,?)")
           .run(engine.state.matchId, Date.now(), JSON.stringify(engine.state));
-      io.emit("state", publicState());
+      syncState();
     } catch (error) {
       console.error("Game loop error", error);
     }

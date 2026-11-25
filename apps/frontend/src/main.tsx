@@ -282,6 +282,28 @@ function PortraitBroadcast({
   );
 }
 
+type StatePatch = Partial<Omit<State, "territories" | "effects">> & {
+  territories?: State["territories"];
+  effects?: State["effects"];
+};
+
+function mergeStatePatch(previous: State, patch: StatePatch): State {
+  const territoryById = new Map((patch.territories ?? []).map((territory) => [territory.id, territory]));
+  const effectIds = new Set((patch.effects ?? []).map((effect) => effect.id));
+  return {
+    ...previous,
+    ...patch,
+    territories: patch.territories
+      ? previous.territories.map((territory) => territoryById.get(territory.id) ?? territory)
+      : previous.territories,
+    // Effects arrive as append-only realtime deltas; retain recent local effects
+    // so the map VFX queue sees the new IDs exactly as it did with snapshots.
+    effects: patch.effects
+      ? [...previous.effects.filter((effect) => !effectIds.has(effect.id)), ...patch.effects].slice(-30)
+      : previous.effects,
+  };
+}
+
 function App() {
   const [state, setState] = useState<State>();
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -308,6 +330,7 @@ function App() {
     });
     socket.on("disconnect", () => setConnected(false));
     socket.on("state", setState);
+    socket.on("statePatch", (patch: StatePatch) => setState((previous) => previous ? mergeStatePatch(previous, patch) : previous));
     socket.on("mapChanged", load);
     return () => {
       socket.disconnect();
