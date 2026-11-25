@@ -1,51 +1,57 @@
-# Cloudflare Pages: static broadcast CDN
-
-Cloudflare Pages serves the static React/Vite application. Render remains the only backend for game state, TikTok, Socket.IO, TTS and admin API. This avoids sending each viewer's JS/CSS/WebP texture from Render.
-
-Trước hết, tạo backend Render theo [`RENDER_NEW_ACCOUNT.md`](./RENDER_NEW_ACCOUNT.md) để có URL API mới.
-
-## 1. Create the Pages project
-
-In Cloudflare Dashboard, open **Workers & Pages → Create application → Pages → Import an existing Git repository** and choose `thangdev15-ui/Vietnam-map-live`.
-
-Use these exact production settings:
-
-| Setting | Value |
-|---|---|
-| Production branch | `main` |
-| Build command | `npm ci && npm run build:frontend` |
-| Build output directory | `dist/client` |
-| Root directory | leave blank |
-| Node version environment variable | `NODE_VERSION=24.22.1` |
-| Public build environment variable | `VITE_API_ORIGIN=https://<ten-service-render-moi>.onrender.com` |
-
-Deploy. Cloudflare provides a URL such as `https://<project>.pages.dev`. Test the page at `/?broadcast=1`.
-
-## 2. Allow this Pages site to reach Render
-
-In Render → service mới → **Environment**, set `CORS_ORIGINS` to the exact Pages URL, without a trailing slash:
-
-```text
-https://<project>.pages.dev
-```
-
-If a custom Pages domain is added later, add it comma-separated too:
-
-```text
-https://<project>.pages.dev,https://live.example.com
-```
-
-Save and redeploy Render. Do not place `ADMIN_TOKEN`, TikTok keys, or any other secret in Cloudflare Pages variables. `VITE_API_ORIGIN` is public by design and contains only the Render API URL.
-
-## 3. Verify before switching OBS/TikTok
-
-1. Open the Pages URL with `/?broadcast=1`; state should connect and show **ĐỒNG BỘ LIVE**.
-2. Open `/admin` on the Pages URL and use the existing admin token; run one safe simulator event.
-3. In browser DevTools → Network, confirm `assets/*` responses come from `pages.dev`; `/api/*` and `/socket.io/*` go only to URL Render mới.
-4. Leave the existing Render URL available as an emergency fallback.
-
-## Limits
-
-Pages offloads static files, which are normally the largest per-viewer downloads. Socket.IO state, API responses and dynamic MP3 still leave Render and count toward its bandwidth. The game intentionally keeps these messages small; the terrain texture is now 180 KB and cached immutably.
-
-Cloudflare Pages redirect files cannot proxy an external Render domain, so the client calls the configured API origin directly. This is why the exact CORS allow-list above is required.
+{
+  "name": "vietnam-dai-chien",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k 'tsx watch apps/backend/src/index.ts' 'vite --host 0.0.0.0'",
+    "build:frontend": "vite build",
+    "deploy:cloudflare": "wrangler deploy",
+    "build": "tsc --noEmit && vite build && tsup apps/backend/src/index.ts --format esm --out-dir dist/server --external tiktok-live-connector",
+    "start": "node dist/server/index.js",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/migrate.ts"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "compression": "^1.8.2",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "node-edge-tts": "^1.2.12",
+    "phaser": "^3.90.0",
+    "polygon-clipping": "^0.15.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "socket.io": "^4.8.0",
+    "socket.io-client": "^4.8.0",
+    "tailwindcss": "^4.0.0",
+    "tiktok-live-connector": "2.5.0",
+    "vite": "^8.3.8",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.86.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "overrides": {
+    "esbuild": "0.28.2"
+  }
+}

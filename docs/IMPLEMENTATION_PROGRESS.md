@@ -70,3 +70,9 @@ Ngày cập nhật: 2026-11-24
 - Patch only carries changed territories, current visible players, latest feed, newly-added effects and scalar match data; idle state emits nothing.
 - Enabled WebSocket per-message compression above 1 KB. `GET /api/admin/status` now reports approximate outgoing realtime frames/bytes/recipients for deployment monitoring.
 - Verification: Socket integration test confirms a patch is below 50% of first snapshot, no idle snapshot is sent, and telemetry increments; full build/lint/Vitest 36/36 passed.
+
+## Cloudflare Workers Static Assets migration
+
+- Cloudflare dashboard now uses Workers Builds for the Git UI shown by the user. Added `wrangler.jsonc` for `dist/client` static assets with SPA fallback, `.assetsignore` for the Pages-only header file, and pinned Wrangler 4 development tooling.
+- Updated deployment runbook with `npm ci && npm run build:frontend` and `npm run deploy:cloudflare`; Render stays the API/Socket origin.
+- Verification: Vite client build passed, `wrangler deploy --dry-run` read the built asset directory, ESLint passed, Vitest 36/36 passed.

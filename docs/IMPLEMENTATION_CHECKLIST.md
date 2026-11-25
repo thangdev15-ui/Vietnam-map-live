@@ -121,3 +121,10 @@
 |---|---|---|---|---|
 | BW-05 | Không phát full state mỗi 100 ms; client mới nhận snapshot đầy đủ, viewer đang xem nhận delta theo thay đổi và có giới hạn tần suất | `apps/backend/src/server.ts`, `apps/frontend/src/main.tsx` | Không có thay đổi thì không gửi byte; statePatch tối đa 1 lần/0,5 giây; state đầy đủ khi connect/map reset | COMPLETED |
 | BW-06 | Giữ animation/leaderboard/map đúng sau delta và đo số frame/byte Socket gửi | `server.ts`, `main.tsx`, `tests/server.test.ts` | Test snapshot + patch nhỏ hơn 50% snapshot, không có idle snapshot; admin telemetry outbound; build/lint/test pass | COMPLETED |
+
+## Cloudflare Workers Static Assets CDN
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| CF-WORKER-01 | Hỗ trợ Cloudflare Workers Builds hiện hành để phục vụ Vite SPA từ CDN | `wrangler.jsonc`, `package.json`, `apps/frontend/public/.assetsignore` | `wrangler deploy --dry-run` nhận 7 file từ `dist/client`; SPA fallback và `.assetsignore` đúng | COMPLETED |
+| CF-WORKER-02 | Cập nhật runbook từ Pages cũ sang UI Workers hiện tại | `docs/CLOUDFLARE_PAGES.md` | Có đúng build/deploy command, biến công khai và bước CORS Render | COMPLETED |
