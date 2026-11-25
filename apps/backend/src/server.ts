@@ -4,6 +4,7 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import helmet from "helmet";
+import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { Server } from "socket.io";
 import { z } from "zod";
@@ -86,6 +87,15 @@ export function createApp(token: string, dbPath: string) {
     io.emit("mapChanged");
   };
   app.use(helmet({ contentSecurityPolicy: false }));
+  // Render bills every byte sent to viewers. Text assets compress well; live
+  // socket frames and MP3 should stay untouched to avoid latency/CPU waste.
+  app.use(compression({
+    threshold: 1024,
+    filter: (request, response) =>
+      !request.path.startsWith("/socket.io") &&
+      !response.getHeader("Content-Type")?.toString().startsWith("audio/") &&
+      compression.filter(request, response),
+  }));
   app.use(express.json({ limit: "128kb" }));
   app.use("/api", rateLimit({ windowMs: 60000, limit: 300 }));
   app.get("/api/state", (_q, r) => r.json(publicState()));
@@ -266,8 +276,19 @@ export function createApp(token: string, dbPath: string) {
     adapter.disconnect();
     r.json({ ok: true });
   });
-  app.use(express.static(resolve("dist/client")));
-  app.get("*", (_q, r) => r.sendFile(resolve("dist/client/index.html")));
+  const clientDir = resolve("dist/client");
+  // Vite adds a content hash to every generated asset. Cache those forever:
+  // a new deploy has new filenames, so this cannot serve stale JS/CSS.
+  app.use("/assets", express.static(resolve(clientDir, "assets"), {
+    immutable: true,
+    maxAge: "365d",
+  }));
+  // Do not cache HTML. It must point viewers at the latest hashed assets.
+  app.use(express.static(clientDir, { index: false, maxAge: 0 }));
+  app.get("*", (_q, r) => {
+    r.set("Cache-Control", "no-cache");
+    r.sendFile(resolve(clientDir, "index.html"));
+  });
   app.use(
     (
       error: Error,

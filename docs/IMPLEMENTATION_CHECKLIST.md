@@ -97,3 +97,12 @@
 | ENG-02 | Quà tặng được nhận biết như một sự kiện gameplay riêng, có VFX/director copy phù hợp, nhưng vẫn dùng đúng gift mapping và power admin cấu hình | `game-engine`, `vfx.ts`, `main.tsx`, `Map.tsx` | Gift hợp lệ tạo effect `gift`, thêm điểm/ảnh hưởng territory thật; super/capture giữ nguyên | COMPLETED |
 | ENG-03 | Mục tiêu kế tiếp chỉ ra tỉnh chưa sáng gần hoàn tất để cộng đồng tập trung, không tự chọn/chuyển mục tiêu của người chơi | `main.tsx` | Chỉ đọc state map/territory, không mutate engine | COMPLETED |
 | ENG-04 | Unit test gift effect và kiểm tra broadcast bằng demo event | `tests`, `docs/verification` | Test chứng minh điểm/HP/effect/contributor đúng; Playwright demo có ảnh tổ đội và state thật | COMPLETED |
+
+## BANDWIDTH — giảm outbound bandwidth Render
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| BW-01 | Thay terrain texture PNG nặng bằng WebP tương đương, giữ map clip theo polygon | `apps/frontend/src/assets`, `Map.tsx` | 3.2 MB → 180 KB (94%); Map 2 vẫn dùng texture trong clip polygon | COMPLETED |
+| BW-02 | Đặt cache immutable cho Vite asset có content hash; không cache HTML entry/stale state | `apps/backend/src/server.ts` | Đã xác nhận `assets/*`: `max-age=31536000, immutable`; `/`: `no-cache` | COMPLETED |
+| BW-03 | Nén response text/JS/CSS cho client tương thích | `server.ts`, dependencies | Đã xác nhận JS trả `Content-Encoding: gzip`; Socket.IO/audio bị bỏ qua | COMPLETED |
+| BW-04 | Build/test và kiểm tra header/cache + ảnh Map 2 | `tests`, `docs/verification` | Build/lint/test pass; kiểm tra HTTP header local production-style | COMPLETED |

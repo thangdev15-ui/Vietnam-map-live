@@ -46,3 +46,11 @@ Ngày cập nhật: 2026-11-24
 - Broadcast hiển thị “Điểm nóng tiếp theo” là tỉnh chưa sáng có HP thấp nhất; đây chỉ là gợi ý từ state, không đổi target hay gameplay.
 - Unit suite 35 tests pass, gồm assertion quà giảm HP, cộng điểm, tạo effect và có contributor.
 - Visual proof: `docs/verification/engagement-gift-squad.png` với Minh Anh + Trâm cùng góp Hà Nội; API state xác nhận HP 10, gift power 40, points 65/25 và contributor roster.
+
+
+## Bandwidth optimization — 2026-11-25
+
+- Terrain material đã đổi từ PNG 3.2 MB sang WebP 180,502 bytes (giảm khoảng 94%), không đổi polygon/clip logic.
+- Assets Vite hash được cache `public, max-age=31536000, immutable`; HTML entry trả `no-cache` để deploy mới luôn load bundle mới.
+- Thêm gzip cho text/JS/CSS >1 KB; Socket.IO và audio không nén để không tăng latency/CPU vô ích.
+- Xác nhận cục bộ bằng server production build: WebP có `image/webp`, immutable cache; JS gửi với `Content-Encoding: gzip`. Build/lint và 35 tests pass.

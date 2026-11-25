@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import Phaser from "phaser";
 import type { Province, State } from "../../../packages/shared/index";
-import terrainSurface from "./assets/terrain-surface-v1.png";
+import terrainSurface from "./assets/terrain-surface-v2.webp";
 import { EffectPool, VFXManager, type VfxJob } from "./vfx";
 const project = ([x, y]: number[]) => ({
   x: (x - 101.5) * 62 + 50,
