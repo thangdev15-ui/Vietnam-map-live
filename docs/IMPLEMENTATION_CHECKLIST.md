@@ -126,5 +126,5 @@
 
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
 |---|---|---|---|---|
-| CF-WORKER-01 | Hỗ trợ Cloudflare Workers Builds hiện hành để phục vụ Vite SPA từ CDN | `wrangler.jsonc`, `package.json`, `apps/frontend/public/.assetsignore` | `wrangler deploy --dry-run` nhận 7 file từ `dist/client`; SPA fallback và `.assetsignore` đúng | COMPLETED |
+| CF-WORKER-01 | Hỗ trợ Cloudflare Workers Builds hiện hành để phục vụ Vite SPA từ CDN | `wrangler.jsonc`, `package.json`, `apps/frontend/public/.assetsignore` | `wrangler deploy --dry-run` nhận 7 file từ `dist/client`; SPA fallback, `.assetsignore` và `workers.dev` URL được cấu hình rõ | COMPLETED |
 | CF-WORKER-02 | Cập nhật runbook từ Pages cũ sang UI Workers hiện tại | `docs/CLOUDFLARE_PAGES.md` | Có đúng build/deploy command, biến công khai và bước CORS Render | COMPLETED |
