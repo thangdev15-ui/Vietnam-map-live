@@ -79,3 +79,12 @@
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
 |---|---|---|---|---|
 | VOICE-01 | MC TTS tiếng Việt miễn phí: MP3 động, cache, hàng đợi, fallback Web Speech | `apps/backend/src/edge-tts.ts`, `server.ts`, `audio.ts` | Không cần API key; câu đọc đúng cấu trúc; cache và không chồng lời; lỗi thì thử Web Speech. Đã gọi thật và nhận `audio/mpeg` 22,032 bytes | COMPLETED |
+
+## Broadcast cinematic director — đợt nâng cấp tiếp theo
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| CINE-01 | Director ribbon cho sự kiện thắp sáng, gift, combo và milestone: avatar/người chơi/tỉnh/điểm; không che tâm bản đồ | `apps/frontend/src/main.tsx`, `style.css` | Chỉ xuất hiện từ effect realtime mới, tự biến mất, đúng tỉnh và điểm của effect | COMPLETED |
+| CINE-02 | Nâng cảm giác sân khấu broadcast: nền khí quyển, quét ánh sáng và glow theo cường độ event, tôn trọng reduced motion | `apps/frontend/src/style.css` | Lớp hậu cảnh không chặn click/map; có reduced motion | COMPLETED |
+| CINE-03 | Leaderboard có tín hiệu đổi hạng và thanh mục tiêu cộng đồng từ state thật | `apps/frontend/src/main.tsx`, `style.css` | Không dùng điểm giả; thay đổi score/rank tạo animation, có mốc tiến độ rõ | COMPLETED |
+| CINE-04 | Chụp/kiểm tra broadcast portrait và desktop với event thật, chạy build/lint/test | `docs/verification`, frontend | Đã kiểm tra portrait/event thật + build/lint/test; desktop còn cần nghiệm thu riêng | IN_PROGRESS |

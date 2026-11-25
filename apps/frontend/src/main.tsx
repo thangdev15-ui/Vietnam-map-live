@@ -22,15 +22,21 @@ function PortraitBroadcast({
 }) {
   const sound = useRef<LightSoundscape | undefined>(undefined);
   const announced = useRef<string | undefined>(undefined);
+  const directorSeen = useRef<string | undefined>(undefined);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [directorEvent, setDirectorEvent] = useState<State["effects"][number]>();
   const seconds = Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000));
   const voteSeconds = Math.max(0, Math.ceil(((state.voting?.endsAt ?? Date.now()) - Date.now()) / 1000));
   const claimed = state.territories.filter((t) => t.owner).length;
+  const communityTarget = Math.min(provinces.length, Math.max(5, Math.ceil(provinces.length * 0.32)));
   const leader = state.players[0];
   const comboPlayer = state.players
     .filter((player) => player.combo >= state.settings.comboThreshold)
     .sort((a, b) => b.combo - a.combo)[0];
   const latestEffect = state.effects.at(-1);
+  const latestDirectorEffect = [...state.effects].reverse().find((effect) =>
+    ["capture", "super", "combo", "chest", "complete", "meteor", "lightning", "vortex", "starfall"].includes(effect.kind),
+  );
   const mapCompleted = state.effects.some((effect) => effect.kind === "complete");
   const latestProvinceName = latestEffect
     ? provinces.find((p) => p.id === latestEffect.province)?.name
@@ -46,6 +52,18 @@ function PortraitBroadcast({
     if (audioEnabled && latestEffect.kind === "capture")
       void sound.current?.announce(latestEffect.player, latestProvinceName ?? "thành phố");
   }, [audioEnabled, latestEffect?.id, latestEffect?.kind, latestEffect?.player, latestProvinceName]);
+  useEffect(() => {
+    if (!latestDirectorEffect) return;
+    if (!directorSeen.current) {
+      directorSeen.current = latestDirectorEffect.id;
+      return;
+    }
+    if (directorSeen.current === latestDirectorEffect.id) return;
+    directorSeen.current = latestDirectorEffect.id;
+    setDirectorEvent(latestDirectorEffect);
+    const clear = window.setTimeout(() => setDirectorEvent(undefined), latestDirectorEffect.kind === "complete" ? 5600 : 3600);
+    return () => window.clearTimeout(clear);
+  }, [latestDirectorEffect?.id]);
   useEffect(() => () => sound.current?.stop(), []);
   const enableAudio = () => {
     sound.current ??= new LightSoundscape();
@@ -68,6 +86,17 @@ function PortraitBroadcast({
   const featured = latestEffect
     ? `${latestEffect.player} vừa ${latestEffect.kind === "capture" ? "thắp sáng" : latestEffect.kind === "heal" ? "tiếp năng lượng cho" : "gửi ánh sáng tới"} ${latestProvinceName ?? "một vùng"}`
     : state.feed[0] ?? "Bình luận tên tỉnh, thành để thắp sáng bản đồ";
+  const directorProvince = directorEvent
+    ? provinces.find((province) => province.id === directorEvent.province)?.name ?? "một vùng"
+    : "";
+  const directorKind = directorEvent?.kind === "super" ? "SIÊU ÁNH SÁNG" :
+    directorEvent?.kind === "combo" ? "COMBO ÁNH SÁNG" :
+    directorEvent?.kind === "chest" ? "RƯƠNG ÁNH SÁNG" :
+    directorEvent?.kind === "complete" ? "BẢN ĐỒ BỪNG SÁNG" :
+    directorEvent?.kind === "meteor" ? "THIÊN THẠCH ÁNH SÁNG" :
+    directorEvent?.kind === "lightning" ? "THIÊN LÔI GIÁNG XUỐNG" :
+    directorEvent?.kind === "vortex" ? "XOÁY NĂNG LƯỢNG" :
+    directorEvent?.kind === "starfall" ? "MƯA SAO ÁNH SÁNG" : "THÀNH PHỐ VỪA LÊN ĐÈN";
   return (
     <main className="portrait-live" aria-label="Màn hình phát TikTok dọc">
       <header className="portrait-header">
@@ -97,7 +126,23 @@ function PortraitBroadcast({
 
       <section className="portrait-arena">
         <div className="portrait-map-glow" />
+        <div className="portrait-atmosphere" aria-hidden="true"><i /><i /><i /></div>
         <BattleMap provinces={provinces} state={state} onSelect={setSelected} />
+        {directorEvent && (
+          <section className={`portrait-director-ribbon ribbon-${directorEvent.kind}`} key={directorEvent.id} aria-live="assertive">
+            <div className="director-avatar">
+              <span>{directorEvent.player.slice(0, 1).toUpperCase()}</span>
+              {directorEvent.avatar && <img src={directorEvent.avatar} alt="" />}
+            </div>
+            <div className="director-copy">
+              <small>✦ {directorKind}</small>
+              <strong>{directorEvent.player}</strong>
+              <span>{directorEvent.kind === "combo" ? `đạt chuỗi năng lượng tại ${directorProvince}` : `vừa thắp sáng ${directorProvince}`}</span>
+            </div>
+            <b className="director-points">+{directorEvent.power}</b>
+            <i className="director-timer" />
+          </section>
+        )}
         {comboPlayer && (
           <div className="portrait-combo" aria-live="polite">
             <span>COMBO ×{comboPlayer.combo}</span>
@@ -164,7 +209,7 @@ function PortraitBroadcast({
           <section className="portrait-card leaderboard-card">
             <small>🏆 BẢNG ĐIỂM THẮP ĐÈN · {state.phase === "running" ? "ĐANG DIỄN RA" : "CHỜ KHAI TRẬN"}</small>
             {state.players.slice(0, 4).map((player, index) => (
-              <div className="portrait-rank" key={player.name + index}>
+              <div className={"portrait-rank " + (index === 0 ? "rank-first" : "")} key={player.name + index + player.score}>
                 <b>{index + 1}</b><span>{player.name}</span><strong>{player.score}</strong>
               </div>
             ))}
@@ -192,6 +237,12 @@ function PortraitBroadcast({
             ))}
             {claimedProvinces.length > 6 && <p className="portrait-empty">+ {claimedProvinces.length - 6} tỉnh khác</p>}
             {!claimedProvinces.length && <p className="portrait-empty">Hãy là người thắp ngọn đèn đầu tiên.</p>}
+          </section>
+          <section className="portrait-card community-goal">
+            <small>⚑ MỤC TIÊU CỘNG ĐỒNG <b>{claimed >= communityTarget ? "ĐÃ ĐẠT" : "ĐANG DIỄN RA"}</b></small>
+            <strong>{Math.min(claimed, communityTarget)} / {communityTarget} <i>TỈNH</i></strong>
+            <div><i style={{ width: `${Math.min(100, (claimed / communityTarget) * 100)}%` }} /></div>
+            <p>{claimed >= communityTarget ? "Cả livestream đã mở cột mốc ánh sáng!" : `Còn ${communityTarget - claimed} tỉnh để kích hoạt cột mốc.`}</p>
           </section>
         </aside>
       </section>

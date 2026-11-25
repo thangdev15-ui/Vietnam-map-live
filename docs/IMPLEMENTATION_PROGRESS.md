@@ -29,3 +29,11 @@ Ngày cập nhật: 2026-11-24
 - Backend tạo MP3 theo câu nói, dedupe request đang tạo và cache RAM sáu giờ (giới hạn 24 MB).
 - Frontend xếp hàng lời dẫn, phát tuần tự và duck ambience; Web Speech chỉ là fallback nếu Edge TTS lỗi.
 - Đã kiểm tra end-to-end cục bộ: POST `/api/tts` → polling GET → `200 audio/mpeg`, 22,032 bytes cho câu tiếng Việt.
+
+
+## Broadcast cinematic director — 2026-11-25
+
+- Thêm ribbon event realtime ở mép trên: player/avatar, loại event, tỉnh và điểm. Nó chỉ kích hoạt khi có effect mới, tự ẩn và không đặt popup ở tâm map.
+- Thêm lớp khí quyển phía sau map, có `prefers-reduced-motion` để tắt animation.
+- Leaderboard nay animate khi score/rank thật đổi; mục tiêu cộng đồng lấy trực tiếp từ số tỉnh đã chiếm (20/63 theo 32%, giới hạn theo số tỉnh).
+- Kiểm tra Playwright với event lightning thật từ VFX Test Lab: `docs/verification/cinematic-director-live-event.png`.
