@@ -24,14 +24,15 @@ const ev = (id: string, userId = id, text = "đỏ") => ({
   count: 1,
 });
 describe("Server integration", () => {
-  it("keeps FPT narration unavailable until its server key is configured", async () => {
+  it("queues free Edge narration without requiring a provider API key", async () => {
     const url = await start();
     const response = await fetch(url + "/api/tts", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ text: "Thắng đã thắp sáng Hà Nội" }),
     });
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(202);
+    expect((await response.json()).provider).toBe("edge-tts");
   });
   it("authenticates admin, validates settings, denies spoofed live source", async () => {
     const url = await start();

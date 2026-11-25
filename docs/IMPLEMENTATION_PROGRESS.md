@@ -21,3 +21,11 @@ Ngày cập nhật: 2026-11-24
 - Đã sửa Map 2 để dùng chính ID tỉnh từ server event thay vì suy luận từ territory delta. Việc này giữ camera và VFX cùng tọa độ của đúng tỉnh trong SVG transform.
 - Bằng chứng visual hiện có: `docs/verification/phase2-terrain-meteor.png`, `phase2-terrain-lightning.png`, `phase2-terrain-vortex.png`, `phase2-warroom-vortex.png`.
 - Kiểm tra gần nhất bằng Node 24: build, lint và 31 test (game/connector/server) đều qua. Còn cần nghiệm thu bằng mắt đầy đủ chuỗi 4 effect trên cả hai view trước khi đánh dấu VFX2-07 hoàn tất.
+
+
+## MC voice miễn phí — 2026-11-25
+
+- Thay FPT.AI bằng `node-edge-tts` chạy trong Node 24 của Render, mặc định `vi-VN-HoaiMyNeural`; không dùng API key hoặc Voice ID.
+- Backend tạo MP3 theo câu nói, dedupe request đang tạo và cache RAM sáu giờ (giới hạn 24 MB).
+- Frontend xếp hàng lời dẫn, phát tuần tự và duck ambience; Web Speech chỉ là fallback nếu Edge TTS lỗi.
+- Đã kiểm tra end-to-end cục bộ: POST `/api/tts` → polling GET → `200 audio/mpeg`, 22,032 bytes cho câu tiếng Việt.

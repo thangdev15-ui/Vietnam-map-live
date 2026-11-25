@@ -18,6 +18,14 @@ import { GameEngine } from "../../../packages/game-engine/index";
 import { TikTokAdapter } from "../../../packages/tiktok-connector/index";
 import { Store } from "./database";
 import { Processor } from "./processor";
+import { EdgeSpeechCache } from "./edge-tts";
+
+type TtsJob = {
+  audio?: Buffer;
+  error?: string;
+  expiresAt: number;
+  pending?: Promise<Buffer>;
+};
 export function createApp(token: string, dbPath: string) {
   const store = new Store(dbPath);
   const rawSettings = store.get<Record<string, unknown>>("settings");
@@ -54,7 +62,8 @@ export function createApp(token: string, dbPath: string) {
   const app = express();
   const http = createServer(app);
   const io = new Server(http, { maxHttpBufferSize: 16384 });
-  const ttsJobs = new Map<string, { url: string; expiresAt: number }>();
+  const speech = new EdgeSpeechCache();
+  const ttsJobs = new Map<string, TtsJob>();
   const publicState = () => ({
     ...engine.state,
     voting: engine.state.voting
@@ -85,40 +94,15 @@ export function createApp(token: string, dbPath: string) {
   const ttsLimit = rateLimit({ windowMs: 60_000, limit: 12, standardHeaders: true, legacyHeaders: false });
   app.post("/api/tts", ttsLimit, async (q, r) => {
     const { text } = z.object({ text: z.string().trim().min(3).max(180) }).parse(q.body);
-    const apiKey = process.env.FPT_TTS_API_KEY;
-    if (!apiKey) {
-      r.status(503).json({ error: "Chưa cấu hình FPT.AI TTS" });
-      return;
-    }
-    try {
-      const response = await fetch("https://api.fpt.ai/hmi/tts/v5", {
-        method: "POST",
-        headers: {
-          api_key: apiKey,
-          voice: process.env.FPT_TTS_VOICE ?? "banmai",
-          speed: process.env.FPT_TTS_SPEED ?? "0",
-          format: "mp3",
-          "content-type": "text/plain; charset=utf-8",
-        },
-        body: text,
-      });
-      const result = (await response.json()) as { async?: string; error?: number; message?: string };
-      if (!response.ok || result.error || !result.async) {
-        console.error("FPT TTS failed", response.status, result.message);
-        r.status(502).json({
-          error: "FPT.AI không nhận được yêu cầu đọc",
-          providerStatus: response.status,
-          providerMessage: result.message?.slice(0, 300),
-        });
-        return;
-      }
-      const id = randomUUID();
-      ttsJobs.set(id, { url: result.async, expiresAt: Date.now() + 180_000 });
-      r.status(202).json({ id });
-    } catch (error) {
-      console.error("FPT TTS request failed", error);
-      r.status(502).json({ error: "Không kết nối được FPT.AI" });
-    }
+    const { pending } = speech.synthesize(text);
+    const id = randomUUID();
+    const job: TtsJob = { expiresAt: Date.now() + 180_000, pending };
+    ttsJobs.set(id, job);
+    void pending.then((audio) => { job.audio = audio; }).catch((error: unknown) => {
+      console.error("Edge TTS failed", error);
+      job.error = "Không tạo được lời đọc MC";
+    });
+    r.status(202).json({ id, provider: "edge-tts" });
   });
   app.get("/api/tts/:id", async (q, r) => {
     const job = ttsJobs.get(q.params.id);
@@ -127,18 +111,18 @@ export function createApp(token: string, dbPath: string) {
       r.status(404).json({ error: "Không còn yêu cầu giọng đọc" });
       return;
     }
-    try {
-      const audio = await fetch(job.url);
-      if (!audio.ok) {
-        r.status(202).json({ pending: true });
-        return;
-      }
+    if (job.error) {
       ttsJobs.delete(q.params.id);
-      r.set("Cache-Control", "no-store");
-      r.type("audio/mpeg").send(Buffer.from(await audio.arrayBuffer()));
-    } catch {
-      r.status(202).json({ pending: true });
+      r.status(502).json({ error: job.error });
+      return;
     }
+    if (!job.audio) {
+      r.status(202).json({ pending: true });
+      return;
+    }
+    ttsJobs.delete(q.params.id);
+    r.set("Cache-Control", "private, max-age=3600");
+    r.type("audio/mpeg").send(job.audio);
   });
   app.use("/api/admin", (q, r, next) => {
     const got = Buffer.from(

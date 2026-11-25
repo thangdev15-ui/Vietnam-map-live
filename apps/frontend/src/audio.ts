@@ -11,6 +11,8 @@ export class LightSoundscape {
   private enabled = false;
   private lastVoiceAt = 0;
   private narration?: HTMLAudioElement;
+  private narrationQueue: Array<{ player: string; city: string }> = [];
+  private processingNarration = false;
 
   start() {
     if (this.enabled) return;
@@ -55,24 +57,42 @@ export class LightSoundscape {
   async announce(player: string, city: string) {
     if (!this.enabled) return;
     const now = Date.now();
-    if (now - this.lastVoiceAt < 2600) return;
+    if (now - this.lastVoiceAt < 700) return;
     this.lastVoiceAt = now;
     this.lantern();
+    // Keep the first arriving live events in order. A bounded queue protects
+    // the broadcast from spam without interrupting a sentence already playing.
+    if (this.narrationQueue.length >= 10) return;
+    this.narrationQueue.push({ player, city });
+    if (!this.processingNarration) void this.drainNarration();
+  }
+
+  private async drainNarration() {
+    this.processingNarration = true;
+    while (this.enabled && this.narrationQueue.length) {
+      const next = this.narrationQueue.shift()!;
+      await this.fetchAndPlay(next.player, next.city);
+    }
+    this.processingNarration = false;
+  }
+
+  private async fetchAndPlay(player: string, city: string) {
+    const sentence = `${player} đã thắp sáng thành phố ${city}!`;
     try {
       const queued = await fetch("/api/tts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: `${player} đã thắp sáng ${city}` }),
+        body: JSON.stringify({ text: sentence }),
       });
       if (!queued.ok) return this.speakNative(player, city);
       const { id } = (await queued.json()) as { id?: string };
       if (!id) return this.speakNative(player, city);
-      for (let attempt = 0; attempt < 38; attempt++) {
-        await new Promise((resolve) => setTimeout(resolve, 1600));
+      for (let attempt = 0; attempt < 80; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
         const audio = await fetch(`/api/tts/${id}`);
         if (audio.status === 202) continue;
         if (!audio.ok) return this.speakNative(player, city);
-        this.playNarration(await audio.blob());
+        await this.playNarration(await audio.blob());
         return;
       }
     } catch {
@@ -81,17 +101,21 @@ export class LightSoundscape {
   }
 
   private playNarration(blob: Blob) {
-    this.narration?.pause();
+    return new Promise<void>((resolve) => {
     const url = URL.createObjectURL(blob);
     const narration = new Audio(url);
     this.narration = narration;
     narration.volume = 0.92;
     narration.onplay = () => this.duck(true);
-    narration.onended = () => {
+    const done = () => {
       URL.revokeObjectURL(url);
       this.duck(false);
+      resolve();
     };
-    void narration.play();
+    narration.onended = done;
+    narration.onerror = done;
+    void narration.play().catch(done);
+    });
   }
 
   private duck(active: boolean) {
@@ -100,22 +124,26 @@ export class LightSoundscape {
   }
 
   private speakNative(player: string, city: string) {
+    return new Promise<void>((resolve) => {
     const voice = (window.speechSynthesis?.getVoices() ?? []).find((candidate) => candidate.lang.toLowerCase().startsWith("vi"));
-    if (!voice || !window.speechSynthesis) return;
-    const utterance = new SpeechSynthesisUtterance(`${player} đã thắp sáng ${city}`);
+    if (!voice || !window.speechSynthesis) return resolve();
+    const utterance = new SpeechSynthesisUtterance(`${player} đã thắp sáng thành phố ${city}!`);
     utterance.lang = "vi-VN";
     utterance.voice = voice;
     utterance.rate = 0.9;
     utterance.pitch = 1.04;
     utterance.onstart = () => this.duck(true);
-    utterance.onend = () => this.duck(false);
-    window.speechSynthesis.cancel();
+    utterance.onend = () => { this.duck(false); resolve(); };
+    utterance.onerror = () => { this.duck(false); resolve(); };
     window.speechSynthesis.speak(utterance);
+    });
   }
 
   stop() {
     window.speechSynthesis?.cancel();
     this.narration?.pause();
+    this.narrationQueue = [];
+    this.processingNarration = false;
     this.context?.close();
     this.context = undefined;
     this.enabled = false;

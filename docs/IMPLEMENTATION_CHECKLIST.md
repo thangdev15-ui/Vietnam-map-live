@@ -78,4 +78,4 @@
 
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
 |---|---|---|---|---|
-| VOICE-01 | TTS/AI MC | audio/backend | Theo yêu cầu mới nhất: tạm bỏ qua | BLOCKED |
+| VOICE-01 | MC TTS tiếng Việt miễn phí: MP3 động, cache, hàng đợi, fallback Web Speech | `apps/backend/src/edge-tts.ts`, `server.ts`, `audio.ts` | Không cần API key; câu đọc đúng cấu trúc; cache và không chồng lời; lỗi thì thử Web Speech. Đã gọi thật và nhận `audio/mpeg` 22,032 bytes | COMPLETED |
