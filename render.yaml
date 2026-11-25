@@ -16,6 +16,8 @@ services:
         value: /tmp/game.sqlite
       - key: ADMIN_TOKEN
         generateValue: true
+      - key: TIKTOK_SIGN_MODE
+        value: community
       - key: TIKTOK_SIGN_API_KEY
         sync: false
       - key: EDGE_TTS_VOICE

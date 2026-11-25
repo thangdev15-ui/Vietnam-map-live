@@ -3,7 +3,7 @@
 Repository đã có `render.yaml` để đưa **cả game, admin, Socket.IO và backend** lên một URL. Dùng một Web Service duy nhất vì state trận và SQLite phải ở cùng tiến trình.
 
 1. Vào [Render Dashboard](https://dashboard.render.com/), đăng nhập bằng GitHub, chọn **New → Blueprint** rồi chọn repo `thangdev15-ui/Vietnam-map-live`, branch `main`.
-2. Render đọc `render.yaml`. Giữ region Singapore. Nhập `TIKTOK_SIGN_API_KEY` khi được hỏi nếu muốn nhận TikTok LIVE thật; để trống nếu chỉ chạy mô phỏng.
+2. Render đọc `render.yaml`. Giữ region Singapore. Mặc định `TIKTOK_SIGN_MODE=community` để nhận TikTok LIVE bằng Euler Community, không cần `TIKTOK_SIGN_API_KEY`. Chỉ thêm key nếu chủ động chuyển mode sang `business`.
 3. Bấm **Apply**. Khi trạng thái `Live`, mở URL `https://vietnam-map-live.onrender.com` mà Render cấp. Admin ở `/admin`, broadcast ở `/?broadcast=1`.
 4. Lưu `ADMIN_TOKEN` trong phần Environment của service. Render tự sinh token này; dùng token đó để đăng nhập `/admin`.
 

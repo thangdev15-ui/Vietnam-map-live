@@ -8,7 +8,7 @@
 2. Chọn **New → Blueprint**, chọn repo và branch `main`.
 3. Render đọc `render.yaml`. Giữ service web Node ở Singapore, plan `free`, build `npm ci && npm run build`, start `npm start`, health check `/api/health`.
 4. Nhấn **Apply** rồi đợi deploy hoàn tất. Mở `https://<ten-service>.onrender.com/api/health`; phải nhận JSON trạng thái khỏe.
-5. Ở màn Blueprint, dán giá trị hiện có của `TIKTOK_SIGN_API_KEY` từ file `.env` cục bộ nếu sẽ kết nối live thật. `CORS_ORIGINS` không cần nhập ở bước này; chỉ thêm sau khi Pages tạo URL. Không dán key TikTok vào Cloudflare hoặc GitHub.
+5. Giữ `TIKTOK_SIGN_MODE=community` để kết nối LIVE qua Euler Community, không cần thêm `TIKTOK_SIGN_API_KEY`. Chỉ khi mua Euler Business mới đặt mode `business` và secret key ở Render. `CORS_ORIGINS` không cần nhập ở bước này; chỉ thêm sau khi Pages tạo URL. Không dán key TikTok vào Cloudflare hoặc GitHub.
 
 `ADMIN_TOKEN` được Blueprint tạo ngẫu nhiên khi tạo service. Lưu token đó ở trình quản lý mật khẩu để đăng nhập `/admin`; đừng dùng token cũ nếu Render tạo token mới.
 

@@ -76,3 +76,11 @@ Ngày cập nhật: 2026-11-24
 - Cloudflare dashboard now uses Workers Builds for the Git UI shown by the user. Added `wrangler.jsonc` for `dist/client` static assets with SPA fallback, `.assetsignore` for the Pages-only header file, and pinned Wrangler 4 development tooling.
 - Updated deployment runbook with `npm ci && npm run build:frontend` and `npm run deploy:cloudflare`; Render stays the API/Socket origin.
 - Verification: Vite client build passed, `wrangler deploy --dry-run` read the built asset directory, ESLint passed, Vitest 36/36 passed.
+
+
+## TikTok LIVE Community signing fallback — 2026-11-25
+
+- Adapter mặc định `TIKTOK_SIGN_MODE=community`, tạo `TikTokLiveConnection` không truyền `signApiKey`; Euler sẽ dùng Community signing thay vì Business signing endpoint.
+- Khi có Euler Business thật, đặt `TIKTOK_SIGN_MODE=business` và `TIKTOK_SIGN_API_KEY`; nếu thiếu key ở mode này adapter báo lỗi cấu hình trước khi thử kết nối.
+- Không dùng cookie, mật khẩu TikTok hoặc secret trên frontend.
+- Kiểm tra bằng Node 24: connector unit tests, full Vitest 38/38, ESLint và production build pass. Kết nối LIVE thật vẫn cần được người dùng kiểm thử với đúng `@uniqueId` đang phát.

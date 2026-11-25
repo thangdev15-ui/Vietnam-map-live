@@ -26,24 +26,27 @@ export class TikTokAdapter implements LiveAdapter {
   }
   async connect(username: string) {
     this.disconnect();
-    if (!process.env.TIKTOK_SIGN_API_KEY?.trim()) {
+    const signMode = (process.env.TIKTOK_SIGN_MODE ?? "community").trim().toLowerCase();
+    if (signMode === "business" && !process.env.TIKTOK_SIGN_API_KEY?.trim()) {
       this.status = {
         state: "error",
         username,
         attempt: 0,
-        error:
-          "Thiếu TIKTOK_SIGN_API_KEY. Thư viện cần khóa Euler Stream để ký kết nối TikTok.",
+        error: "Chế độ Business cần TIKTOK_SIGN_API_KEY hợp lệ.",
       };
       return;
     }
     this.status = { state: "connecting", username, error: "", attempt: 0 };
-    await this.open(this.generation);
+    await this.open(this.generation, signMode === "business");
   }
-  private async open(gen: number) {
+  private async open(gen: number, useBusinessKey = false) {
     if (gen !== this.generation) return;
+    // Community signing is anonymous. Passing a key selects Euler's paid signing path.
     const c = new TikTokLiveConnection(this.status.username, {
       enableExtendedGiftInfo: true,
-      signApiKey: process.env.TIKTOK_SIGN_API_KEY,
+      ...(useBusinessKey
+        ? { signApiKey: process.env.TIKTOK_SIGN_API_KEY!.trim() }
+        : {}),
     });
     this.connection = c;
     const receive = (type: LiveEvent["type"]) => (d: any) => {
@@ -129,7 +132,10 @@ export class TikTokAdapter implements LiveAdapter {
     this.timer = setTimeout(
       () => {
         this.timer = undefined;
-        void this.open(gen);
+        void this.open(
+          gen,
+          (process.env.TIKTOK_SIGN_MODE ?? "community").trim().toLowerCase() === "business",
+        );
       },
       Math.min(30000, 1000 * 2 ** this.status.attempt),
     );

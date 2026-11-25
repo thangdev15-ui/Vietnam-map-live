@@ -21,7 +21,7 @@ Mở `.env` tại máy, sao chép `ADMIN_TOKEN` vào màn hình đăng nhập. T
 
 Cài thủ công: `npm ci`, sao chép `.env.example` thành `.env` và đặt token ngẫu nhiên ít nhất 24 ký tự, `npm run db:migrate`, `npm run dev`.
 
-Để kết nối TikTok LIVE thật, thêm `TIKTOK_SIGN_API_KEY` vào `.env`. Khóa này lấy từ Euler Stream, dịch vụ ký mà `tiktok-live-connector` 2.5.0 sử dụng; sau khi lưu file cần khởi động lại backend. Khóa chỉ nằm trên máy chủ, không nhập vào giao diện quản trị.
+Để kết nối TikTok LIVE thật, mặc định đặt `TIKTOK_SIGN_MODE=community`: connector nhận token ký Community miễn phí và không gửi API key. Chỉ khi có Euler Business mới đặt `TIKTOK_SIGN_MODE=business` cùng `TIKTOK_SIGN_API_KEY`; sau khi lưu cần khởi động lại backend. Không nhập cookie, mật khẩu TikTok hay secret vào giao diện quản trị.
 
 Lời đọc MC dùng Microsoft Edge TTS với giọng Việt `vi-VN-HoaiMyNeural`; không cần API key và được cache trong bộ nhớ server theo từng câu để tránh tạo lại. Bấm **BẬT ÂM** một lần để trình duyệt được phép phát tiếng. Các câu được xếp hàng theo thứ tự sự kiện, không chồng lên nhau. Nếu dịch vụ giọng đọc không khả dụng, game thử Web Speech API của trình duyệt.
 

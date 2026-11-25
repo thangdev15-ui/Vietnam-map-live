@@ -74,6 +74,13 @@
 | EVENT-04 | Combo có timeout, thưởng, cấu hình admin, animation lớn | engine/map/admin | Combo hết hạn và có thưởng cấu hình được | COMPLETED |
 | EVENT-05 | Hoàn thành 100%: cinematic, top người chơi, lưu kết quả | engine/broadcast/store | Cảnh hoàn tất và match history đúng | COMPLETED |
 
+
+## TikTok LIVE Community fallback
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| TIKTOK-01 | Cho phép nhận comment/gift bằng Euler Community, không gửi Business API key vào endpoint ký premium | `packages/tiktok-connector/index.ts` | Mặc định tạo connection không có `signApiKey`; `TIKTOK_SIGN_MODE=business` mới truyền key; test lifecycle của cả hai mode | COMPLETED |
+
 ## Voice
 
 | ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
