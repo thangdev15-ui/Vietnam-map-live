@@ -5,6 +5,7 @@ import type { Province, State } from "../../../packages/shared/index";
 import { BattleMap } from "./Map";
 import { Admin } from "./Admin";
 import { LightSoundscape } from "./audio";
+import { apiOrigin, backendUrl } from "./api";
 import "./style.css";
 
 function PortraitBroadcast({
@@ -290,7 +291,7 @@ function App() {
   const broadcast = new URLSearchParams(location.search).has("broadcast");
   useEffect(() => {
     const load = () =>
-      fetch("/api/map")
+      fetch(backendUrl("/api/map"))
         .then((r) => {
           if (!r.ok) throw Error("Không tải được bản đồ");
           return r.json();
@@ -300,7 +301,7 @@ function App() {
           setError("");
         })
         .catch((e) => setError(e.message));
-    const socket = io();
+    const socket = io(apiOrigin || undefined);
     socket.on("connect", () => {
       setConnected(true);
       void load();

@@ -28,6 +28,13 @@ type TtsJob = {
   pending?: Promise<Buffer>;
 };
 export function createApp(token: string, dbPath: string) {
+  const allowedOrigins = new Set(
+    (process.env.CORS_ORIGINS ?? "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
+  const acceptsOrigin = (origin?: string) => !origin || allowedOrigins.size === 0 || allowedOrigins.has(origin);
   const store = new Store(dbPath);
   const rawSettings = store.get<Record<string, unknown>>("settings");
   // Previous releases stored the geographic asset as `map`. Keep their game
@@ -62,7 +69,10 @@ export function createApp(token: string, dbPath: string) {
   const adapter = new TikTokAdapter((e) => processor.enqueue(e));
   const app = express();
   const http = createServer(app);
-  const io = new Server(http, { maxHttpBufferSize: 16384 });
+  const io = new Server(http, {
+    maxHttpBufferSize: 16384,
+    cors: { origin: (origin, done) => done(null, acceptsOrigin(origin)), credentials: false },
+  });
   const speech = new EdgeSpeechCache();
   const ttsJobs = new Map<string, TtsJob>();
   const publicState = () => ({
@@ -87,6 +97,17 @@ export function createApp(token: string, dbPath: string) {
     io.emit("mapChanged");
   };
   app.use(helmet({ contentSecurityPolicy: false }));
+  app.use((q, r, next) => {
+    const origin = q.headers.origin;
+    if (origin && acceptsOrigin(origin)) {
+      r.set("Access-Control-Allow-Origin", origin);
+      r.set("Vary", "Origin");
+      r.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+      r.set("Access-Control-Allow-Headers", "Authorization,Content-Type");
+    }
+    if (q.method === "OPTIONS") return r.sendStatus(204);
+    next();
+  });
   // Render bills every byte sent to viewers. Text assets compress well; live
   // socket frames and MP3 should stay untouched to avoid latency/CPU waste.
   app.use(compression({

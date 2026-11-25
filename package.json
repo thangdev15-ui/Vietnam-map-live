@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k 'tsx watch apps/backend/src/index.ts' 'vite --host 0.0.0.0'",
+    "build:frontend": "vite build",
     "build": "tsc --noEmit && vite build && tsup apps/backend/src/index.ts --format esm --out-dir dist/server --external tiktok-live-connector",
     "start": "node dist/server/index.js",
     "test": "vitest run",

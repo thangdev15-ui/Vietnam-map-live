@@ -34,6 +34,20 @@ describe("Server integration", () => {
     expect(response.status).toBe(202);
     expect((await response.json()).provider).toBe("edge-tts");
   });
+  it("allows only configured Cloudflare Page origins to call the separated API", async () => {
+    const previous = process.env.CORS_ORIGINS;
+    process.env.CORS_ORIGINS = "https://vietnam-light.pages.dev";
+    try {
+      const url = await start();
+      const allowed = await fetch(url + "/api/health", { headers: { origin: "https://vietnam-light.pages.dev" } });
+      const blocked = await fetch(url + "/api/health", { headers: { origin: "https://other.pages.dev" } });
+      expect(allowed.headers.get("access-control-allow-origin")).toBe("https://vietnam-light.pages.dev");
+      expect(blocked.headers.get("access-control-allow-origin")).toBeNull();
+    } finally {
+      if (previous === undefined) delete process.env.CORS_ORIGINS;
+      else process.env.CORS_ORIGINS = previous;
+    }
+  });
   it("authenticates admin, validates settings, denies spoofed live source", async () => {
     const url = await start();
     expect((await fetch(url + "/api/admin/status")).status).toBe(401);

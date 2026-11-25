@@ -1,4 +1,6 @@
 /** Gentle, generated soundscape: no downloaded music or autoplay dependency. */
+import { backendUrl } from "./api";
+
 export function hasVietnameseVoice() {
   return (window.speechSynthesis?.getVoices() ?? []).some((voice) =>
     voice.lang.toLowerCase().startsWith("vi"),
@@ -79,7 +81,7 @@ export class LightSoundscape {
   private async fetchAndPlay(player: string, city: string) {
     const sentence = `${player} đã thắp sáng thành phố ${city}!`;
     try {
-      const queued = await fetch("/api/tts", {
+      const queued = await fetch(backendUrl("/api/tts"), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ text: sentence }),
@@ -89,7 +91,7 @@ export class LightSoundscape {
       if (!id) return this.speakNative(player, city);
       for (let attempt = 0; attempt < 80; attempt++) {
         await new Promise((resolve) => setTimeout(resolve, 250));
-        const audio = await fetch(`/api/tts/${id}`);
+        const audio = await fetch(backendUrl(`/api/tts/${id}`));
         if (audio.status === 202) continue;
         if (!audio.ok) return this.speakNative(player, city);
         await this.playNarration(await audio.blob());

@@ -106,3 +106,11 @@
 | BW-02 | Đặt cache immutable cho Vite asset có content hash; không cache HTML entry/stale state | `apps/backend/src/server.ts` | Đã xác nhận `assets/*`: `max-age=31536000, immutable`; `/`: `no-cache` | COMPLETED |
 | BW-03 | Nén response text/JS/CSS cho client tương thích | `server.ts`, dependencies | Đã xác nhận JS trả `Content-Encoding: gzip`; Socket.IO/audio bị bỏ qua | COMPLETED |
 | BW-04 | Build/test và kiểm tra header/cache + ảnh Map 2 | `tests`, `docs/verification` | Build/lint/test pass; kiểm tra HTTP header local production-style | COMPLETED |
+
+## Cloudflare Pages CDN
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| CDN-01 | Frontend có thể dùng API/Socket origin khác Render hiện tại | `api.ts`, `main.tsx`, `audio.ts` | `VITE_API_ORIGIN` rỗng vẫn chạy cùng origin; có giá trị thì map/socket/TTS/admin gọi backend đó; Pages build pass | COMPLETED |
+| CDN-02 | Render chỉ chấp nhận CORS từ Pages origin được cấu hình | `server.ts`, `render.yaml` | Origin trong `CORS_ORIGINS` được cấp header, origin khác không được cấp; local header/preflight pass | COMPLETED |
+| CDN-03 | Có cấu hình header/static và hướng dẫn deploy Pages không chứa secret | `public/_headers`, `docs/CLOUDFLARE_PAGES.md`, `docs/RENDER_NEW_ACCOUNT.md` | Pages build từ `dist/client`, assets immutable, hướng dẫn verify và tạo Render mới | COMPLETED |

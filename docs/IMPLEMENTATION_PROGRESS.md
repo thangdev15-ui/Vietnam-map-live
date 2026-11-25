@@ -54,3 +54,12 @@ Ngày cập nhật: 2026-11-24
 - Assets Vite hash được cache `public, max-age=31536000, immutable`; HTML entry trả `no-cache` để deploy mới luôn load bundle mới.
 - Thêm gzip cho text/JS/CSS >1 KB; Socket.IO và audio không nén để không tăng latency/CPU vô ích.
 - Xác nhận cục bộ bằng server production build: WebP có `image/webp`, immutable cache; JS gửi với `Content-Encoding: gzip`. Build/lint và 35 tests pass.
+
+## Cloudflare Pages + Render account migration
+
+- Completed CDN-01..03: frontend supports public `VITE_API_ORIGIN` for map, Socket.IO, admin and TTS; empty value retains same-origin Render mode.
+- Added Pages `_headers`: immutable cache for content-hashed assets and no-cache HTML shell.
+- Added Render CORS allow-list `CORS_ORIGINS`, verified an allowed Pages origin receives CORS/preflight headers and another Pages origin does not.
+- Added deployment runbooks: `docs/RENDER_NEW_ACCOUNT.md` then `docs/CLOUDFLARE_PAGES.md`. No secret was committed.
+- Verification: Pages-target build passed; full TypeScript/Vite/backend build passed; ESLint passed; Vitest 36/36 passed.
+- Operational limit: Render free `/tmp` SQLite remains ephemeral and dynamic Socket/API/TTS response bytes still leave Render. Static viewer payload is moved to Pages after user completes provider-account setup.
