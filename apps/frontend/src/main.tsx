@@ -35,7 +35,7 @@ function PortraitBroadcast({
     .sort((a, b) => b.combo - a.combo)[0];
   const latestEffect = state.effects.at(-1);
   const latestDirectorEffect = [...state.effects].reverse().find((effect) =>
-    ["capture", "super", "combo", "chest", "complete", "meteor", "lightning", "vortex", "starfall"].includes(effect.kind),
+    ["capture", "super", "combo", "chest", "complete", "meteor", "lightning", "vortex", "starfall", "gift"].includes(effect.kind),
   );
   const mapCompleted = state.effects.some((effect) => effect.kind === "complete");
   const latestProvinceName = latestEffect
@@ -77,6 +77,10 @@ function PortraitBroadcast({
   const selectedTeam = state.settings.teams.find(
     (t) => t.id === selectedTerritory?.owner,
   );
+  const selectedContributors = selectedTerritory?.contributors ?? [];
+  const nextTerritory = state.territories.filter((territory) => !territory.owner).sort((a, b) => a.hp - b.hp)[0];
+  const nextProvince = nextTerritory ? provinces.find((province) => province.id === nextTerritory.id) : undefined;
+  const nextProgress = nextTerritory ? Math.round((1 - nextTerritory.hp / state.settings.hp) * 100) : 100;
   const claimedProvinces = state.territories
     .filter((territory) => territory.owner)
     .map((territory) => ({
@@ -96,7 +100,8 @@ function PortraitBroadcast({
     directorEvent?.kind === "meteor" ? "THIÊN THẠCH ÁNH SÁNG" :
     directorEvent?.kind === "lightning" ? "THIÊN LÔI GIÁNG XUỐNG" :
     directorEvent?.kind === "vortex" ? "XOÁY NĂNG LƯỢNG" :
-    directorEvent?.kind === "starfall" ? "MƯA SAO ÁNH SÁNG" : "THÀNH PHỐ VỪA LÊN ĐÈN";
+    directorEvent?.kind === "starfall" ? "MƯA SAO ÁNH SÁNG" :
+    directorEvent?.kind === "gift" ? "QUÀ TIẾP SỨC" : "THÀNH PHỐ VỪA LÊN ĐÈN";
   return (
     <main className="portrait-live" aria-label="Màn hình phát TikTok dọc">
       <header className="portrait-header">
@@ -201,6 +206,22 @@ function PortraitBroadcast({
           <b>{selectedProvince.name}</b>
           <small>{selectedTeam ? "ĐÃ LÊN ĐÈN" : `${Math.round(((state.settings.hp - (selectedTerritory?.hp ?? state.settings.hp)) / state.settings.hp) * 100)}% ÁNH SÁNG`}</small>
         </div>
+        {(selectedContributors.length > 0 || nextProvince) && (
+          <section className="portrait-squad" aria-label="Tổ đội thắp sáng">
+            {selectedContributors.length > 0 && <>
+              <small>✦ TỔ ĐỘI THẮP SÁNG</small>
+              <div className="squad-members">
+                {selectedContributors.slice(0, 4).map((member) => <span key={member.id} title={member.name}>{member.avatar ? <img src={member.avatar} alt="" /> : member.name.slice(0, 1).toUpperCase()}</span>)}
+                <b>{selectedContributors.length} NGƯỜI CÙNG THẮP</b>
+              </div>
+              <p>Comment <strong>“{selectedProvince.name}”</strong> để góp thêm ánh sáng.</p>
+            </>}
+            {nextProvince && <div className="next-light-target">
+              <small>⚑ ĐIỂM NÓNG TIẾP THEO</small>
+              <b>{nextProvince.name}</b><span>{nextProgress}% ÁNH SÁNG · CÙNG HOÀN THÀNH</span>
+            </div>}
+          </section>
+        )}
         <aside className="portrait-side-panel">
           <section className="portrait-card conqueror-card">
             <small>⚡ ÁNH SÁNG MỚI</small>

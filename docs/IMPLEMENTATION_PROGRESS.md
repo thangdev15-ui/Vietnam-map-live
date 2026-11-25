@@ -37,3 +37,12 @@ Ngày cập nhật: 2026-11-24
 - Thêm lớp khí quyển phía sau map, có `prefers-reduced-motion` để tắt animation.
 - Leaderboard nay animate khi score/rank thật đổi; mục tiêu cộng đồng lấy trực tiếp từ số tỉnh đã chiếm (20/63 theo 32%, giới hạn theo số tỉnh).
 - Kiểm tra Playwright với event lightning thật từ VFX Test Lab: `docs/verification/cinematic-director-live-event.png`.
+
+
+## Engagement loop — 2026-11-25
+
+- Tổ đội thắp sáng trong Broadcast đọc contributor thật của tỉnh đang chọn. Mọi action có ảnh hưởng (comment, attack/defense, gift) đều ghi người chơi vào contributor roster.
+- Gift không phải super nay tạo effect `gift` riêng: giữ power/config admin, làm giảm HP và cộng điểm thật, đồng thời route VFX Starfall và director ribbon “QUÀ TIẾP SỨC”. Capture vẫn ưu tiên effect `capture`; Super vẫn dùng `super`.
+- Broadcast hiển thị “Điểm nóng tiếp theo” là tỉnh chưa sáng có HP thấp nhất; đây chỉ là gợi ý từ state, không đổi target hay gameplay.
+- Unit suite 35 tests pass, gồm assertion quà giảm HP, cộng điểm, tạo effect và có contributor.
+- Visual proof: `docs/verification/engagement-gift-squad.png` với Minh Anh + Trâm cùng góp Hà Nội; API state xác nhận HP 10, gift power 40, points 65/25 và contributor roster.

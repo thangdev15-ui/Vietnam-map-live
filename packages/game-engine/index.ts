@@ -301,6 +301,7 @@ export class GameEngine {
         gift.skill,
         Math.min(100000, gift.power * e.count),
         e.id,
+        "gift",
       );
     }
     return this.act(
@@ -376,6 +377,9 @@ export class GameEngine {
       skill = "heal";
     }
     if (!t) return "Chọn mục tiêu bằng bình luận trước";
+    // Every meaningful action, including a mapped gift, records its supporter
+    // on the city. This is the same state shown in the live co-op roster.
+    this.rememberContributor(t, p);
     if (skill === "heal" && t.owner !== p.team)
       return "Chỉ phòng thủ tỉnh cùng phe";
     if (skill === "attack" && t.owner === p.team) return "Tỉnh đã thuộc phe";

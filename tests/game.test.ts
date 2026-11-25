@@ -129,11 +129,24 @@ describe("Game rules", () => {
     const g = game();
     g.apply(event("đỏ"));
     g.apply(event("đánh hà nội"));
+    g.apply({ ...event("đánh hà nội"), id: "gift-setup" });
     g.apply({ ...event(""), type: "gift", giftId: "rose", count: 2 });
     expect(g.state.territories[0].owner).toBe("red");
     const score = g.state.players[0].score;
     g.apply({ ...event(""), type: "gift", giftId: "unknown" });
     expect(g.state.players[0].score).toBe(score);
+  });
+  it("turns a mapped non-super gift into a real gift effect without changing its configured power", () => {
+    const g = game();
+    g.apply(event("đỏ"));
+    g.apply(event("đánh hà nội"));
+    const beforeHp = g.state.territories[0].hp;
+    const beforeScore = g.state.players[0].score;
+    expect(g.apply({ ...event(""), id: "gift-cinematic", type: "gift", giftId: "rose", count: 1 })).toBe("gift");
+    expect(g.state.territories[0].hp).toBe(beforeHp - g.state.settings.gifts[0].power);
+    expect(g.state.players[0].score).toBe(beforeScore + g.state.settings.gifts[0].power);
+    expect(g.state.territories[0].contributors).toEqual(expect.arrayContaining([expect.objectContaining({ name: "User" })]));
+    expect(g.state.effects.at(-1)).toMatchObject({ id: "gift-cinematic", kind: "gift", power: g.state.settings.gifts[0].power });
   });
   it("blocks players and disabled events", () => {
     const g = game();

@@ -88,3 +88,12 @@
 | CINE-02 | Nâng cảm giác sân khấu broadcast: nền khí quyển, quét ánh sáng và glow theo cường độ event, tôn trọng reduced motion | `apps/frontend/src/style.css` | Lớp hậu cảnh không chặn click/map; có reduced motion | COMPLETED |
 | CINE-03 | Leaderboard có tín hiệu đổi hạng và thanh mục tiêu cộng đồng từ state thật | `apps/frontend/src/main.tsx`, `style.css` | Không dùng điểm giả; thay đổi score/rank tạo animation, có mốc tiến độ rõ | COMPLETED |
 | CINE-04 | Chụp/kiểm tra broadcast portrait và desktop với event thật, chạy build/lint/test | `docs/verification`, frontend | Đã kiểm tra portrait/event thật + build/lint/test; desktop còn cần nghiệm thu riêng | IN_PROGRESS |
+
+## Engagement loop — người xem quay lại, cùng chơi và đóng góp minh bạch
+
+| ID | Yêu cầu | Module | Điều kiện nghiệm thu | Trạng thái |
+|---|---|---|---|---|
+| ENG-01 | Hiển thị tổ đội đang cùng thắp thành phố: contributor thật, avatar và lời kêu gọi cùng comment; người đã tham gia vẫn được ghi nhận sau khi tỉnh sáng | `main.tsx`, `style.css`, `game-engine` | Dùng `territory.contributors` từ engine; mọi action có ý nghĩa ghi nhận contributor | COMPLETED |
+| ENG-02 | Quà tặng được nhận biết như một sự kiện gameplay riêng, có VFX/director copy phù hợp, nhưng vẫn dùng đúng gift mapping và power admin cấu hình | `game-engine`, `vfx.ts`, `main.tsx`, `Map.tsx` | Gift hợp lệ tạo effect `gift`, thêm điểm/ảnh hưởng territory thật; super/capture giữ nguyên | COMPLETED |
+| ENG-03 | Mục tiêu kế tiếp chỉ ra tỉnh chưa sáng gần hoàn tất để cộng đồng tập trung, không tự chọn/chuyển mục tiêu của người chơi | `main.tsx` | Chỉ đọc state map/territory, không mutate engine | COMPLETED |
+| ENG-04 | Unit test gift effect và kiểm tra broadcast bằng demo event | `tests`, `docs/verification` | Test chứng minh điểm/HP/effect/contributor đúng; Playwright demo có ảnh tổ đội và state thật | COMPLETED |

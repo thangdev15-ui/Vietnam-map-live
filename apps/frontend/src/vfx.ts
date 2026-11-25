@@ -12,14 +12,14 @@ export const EffectPresets: Record<VfxTier, Pick<VfxJob, "priority" | "duration"
 };
 
 export function presetFor(effect: Effect): VfxJob {
-  const tier: VfxTier = effect.kind === "starfall" ? "legendary" : effect.kind === "meteor" ? "epic" :
+  const tier: VfxTier = effect.kind === "starfall" ? "legendary" : effect.kind === "meteor" || effect.kind === "gift" ? "epic" :
     effect.kind === "lightning" || effect.kind === "vortex" ? "awakening" : effect.kind === "complete" ? "legendary" :
     effect.kind === "super" || effect.kind === "chest" ? "epic" :
     effect.kind === "capture" || effect.kind === "combo" ? "awakening" : "spark";
   const preset = EffectPresets[tier];
   const kindEnergy: Record<string, EnergyEffect> = {
     meteor: "meteor", lightning: "lightning", vortex: "vortex", starfall: "starfall",
-    super: "meteor", capture: "lightning", combo: "vortex", chest: "starfall", complete: "starfall",
+    super: "meteor", capture: "lightning", combo: "vortex", chest: "starfall", complete: "starfall", gift: "starfall",
   };
   return {
     ...effect,
